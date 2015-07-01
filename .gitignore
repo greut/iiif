@@ -1,0 +1,6 @@
+images/
+pkg/
+src/
+
+server
+init.sh
