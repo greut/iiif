@@ -23,9 +23,15 @@ The API specifications can be found on [iiif.io](http://iiif.io/api/image/2.0/in
 * `,h`: a non-deformed image with `h` as the height
 * `pct:n`: a non-deformed image scaled by `n` percent
 
+#### [Rotate](http://iiif.io/api/image/2.0/index.html#rotation)
+
+* `n` a clockwise rotation of `n` degrees
+* `!n` a flip is done before the rotation
+
+__limitations__ bimg only supports rotations that are multiples of 90.
+
 ### TODO
 
-* [Rotate](http://iiif.io/api/image/2.0/index.html#rotation)
 * [Quality](http://iiif.io/api/image/2.0/index.html#quality)
 * [Format](http://iiif.io/api/image/2.0/index.html#format)
 * Sendfile

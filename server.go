@@ -150,6 +150,31 @@ func main() {
 			}
 		}
 
+		// Rotation
+		// --------
+		// n angle clockwise in degrees
+		// !n angle clockwise in degrees with a flip (beforehand)
+		if ps.ByName("rotation") != "0" {
+			flip := strings.HasPrefix(ps.ByName("rotation"), "!")
+			angle, _ := strconv.ParseInt(strings.Trim(ps.ByName("rotation"), "!"), 10, 64)
+
+			angle = angle % 360
+			if angle % 90 != 0 {
+				log.Fatal(fmt.Sprintf("Cannot rotate angle that aren't multiples of 90: %v", angle))
+			}
+
+			options := bimg.Options{
+				Flip: flip,
+				Rotate: bimg.Angle(angle),
+			}
+
+			_, err := image.Process(options)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
+
 		// For now jpeg
 		w.Header().Set("Content-Type", "image/jpg")
 
