@@ -39,8 +39,16 @@ __limitations__ bimg only supports rotations that are multiples of 90.
 
 __limitations__ bimg only supports color and gray qualities.
 
+#### [Format](http://iiif.io/api/image/2.0/index.html#format)
+
+* `jpg`
+* `png`
+* `webp`
+
+__limitations__ : bimg (libvips) doesn't support tiff, gif or svg.
+
 ### TODO
 
-* [Format](http://iiif.io/api/image/2.0/index.html#format)
+* Error handling (400 or 500)
 * Sendfile
 * Caching

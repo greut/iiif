@@ -37,7 +37,7 @@ func main() {
 			log.Fatal("Quality and format were expected. Got: " + quality_format)
 		}
 		quality := arr[0] // default
-		//format := arr[1] // jpg
+		format := arr[1] // jpg
 
 		buffer, err := bimg.Read(fmt.Sprintf("%v/%v", *root, ps.ByName("identifier")))
 		if err != nil {
@@ -49,13 +49,6 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		/*
-		imageType := bimg.DetermineImageType(buffer)
-		if err != err {
-			log.Fatal(err)
-		}
-		log.Println(imageType) // 1:JPEG, 2:WEBP, 3:PNG, 4:TIFF, 5:MAGICK
-		*/
 
 		// Region
 		// ------
@@ -181,13 +174,23 @@ func main() {
 			options.Interpretation = bimg.INTERPRETATION_B_W
 		}
 
+		if (format == "jpg" || format == "jpeg") {
+			options.Type = bimg.JPEG
+			w.Header().Set("Content-Type", "image/jpg")
+		} else if (format == "png") {
+			options.Type = bimg.PNG
+			w.Header().Set("Content-Type", "image/png")
+		} else if (format == "webp") {
+			options.Type = bimg.WEBP
+			w.Header().Set("Content-Type", "image/webp")
+		} else {
+			log.Fatal("This format is not yet supported. " + format)
+		}
+
 		_, err = image.Process(options)
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		// For now jpeg
-		w.Header().Set("Content-Type", "image/jpg")
 
 		_, err = w.Write(image.Image())
 		if err != nil {
