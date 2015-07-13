@@ -30,9 +30,17 @@ The API specifications can be found on [iiif.io](http://iiif.io/api/image/2.0/in
 
 __limitations__ bimg only supports rotations that are multiples of 90.
 
+#### [Quality](http://iiif.io/api/image/2.0/index.html#quality)
+
+* `color` image in full colour
+* `gray` image in grayscale
+* `bitonal` image in either black or white pixels
+* `default` image returned in the server default quality
+
+__limitations__ bimg only supports color and gray qualities.
+
 ### TODO
 
-* [Quality](http://iiif.io/api/image/2.0/index.html#quality)
 * [Format](http://iiif.io/api/image/2.0/index.html#format)
 * Sendfile
 * Caching

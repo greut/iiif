@@ -31,6 +31,14 @@ func main() {
 	router.GET("/:identifier/:region/:size/:rotation/:quality_format", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		log.Println(fmt.Sprintf("/%v/%v", *root, ps.ByName("identifier")))
 
+		quality_format := ps.ByName("quality_format")
+		arr := strings.Split(quality_format, ".")
+		if len(arr) != 2 {
+			log.Fatal("Quality and format were expected. Got: " + quality_format)
+		}
+		quality := arr[0] // default
+		//format := arr[1] // jpg
+
 		buffer, err := bimg.Read(fmt.Sprintf("%v/%v", *root, ps.ByName("identifier")))
 		if err != nil {
 			log.Fatal(err)
@@ -97,6 +105,13 @@ func main() {
 			}
 		}
 
+		// Size, Rotation and Quality are made in a single Process call.
+		options := bimg.Options{
+			Width: size.Width,
+			Height: size.Height,
+			Enlarge: true,
+		}
+
 		// Size
 		// ----
 		// full
@@ -106,12 +121,6 @@ func main() {
 		// ,h (force height)
 		// pct:n (resize)
 		if ps.ByName("size") != "full" {
-			options := bimg.Options{
-				Width: size.Width,
-				Height: size.Height,
-				Enlarge: true,
-			}
-
 			arr := strings.Split(ps.ByName("size"), ":")
 			if len(arr) == 1 {
 				force := strings.HasPrefix(ps.ByName("size"), "!")
@@ -143,11 +152,6 @@ func main() {
 			} else {
 				log.Fatal("Cannot do anything with " + ps.ByName("region"))
 			}
-
-			_, err := image.Process(options)
-			if err != nil {
-				 log.Fatal(err)
-			}
 		}
 
 		// Rotation
@@ -163,17 +167,24 @@ func main() {
 				log.Fatal(fmt.Sprintf("Cannot rotate angle that aren't multiples of 90: %v", angle))
 			}
 
-			options := bimg.Options{
-				Flip: flip,
-				Rotate: bimg.Angle(angle),
-			}
-
-			_, err := image.Process(options)
-			if err != nil {
-				log.Fatal(err)
-			}
+			options.Flip = flip
+			options.Rotate = bimg.Angle(angle)
 		}
 
+		// Quality
+		// -------
+		// color
+		// gray
+		// bitonal (not supported)
+		// default
+		if quality == "gray" {
+			options.Interpretation = bimg.INTERPRETATION_B_W
+		}
+
+		_, err = image.Process(options)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		// For now jpeg
 		w.Header().Set("Content-Type", "image/jpg")
