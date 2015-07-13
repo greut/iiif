@@ -55,8 +55,6 @@ func main() {
 		// x,y,w,h (in pixels)
 		// pct:x,y,w,h (in percents)
 		if ps.ByName("region") != "full" {
-			log.Println(ps.ByName("region"))
-
 			region := bimg.Options{
 				AreaWidth: size.Width,
 				AreaHeight: size.Height,
@@ -67,20 +65,20 @@ func main() {
 			arr := strings.Split(ps.ByName("region"), ":")
 			if len(arr) == 1 {
 				sizes := strings.Split(arr[0], ",")
-				x, _ := strconv.ParseInt(sizes[0], 10, 32)
-				y, _ := strconv.ParseInt(sizes[1], 10, 32)
-				w, _ := strconv.ParseInt(sizes[2], 10, 32)
-				h, _ := strconv.ParseInt(sizes[3], 10, 32)
+				x, _ := strconv.ParseInt(sizes[0], 10, 64)
+				y, _ := strconv.ParseInt(sizes[1], 10, 64)
+				w, _ := strconv.ParseInt(sizes[2], 10, 64)
+				h, _ := strconv.ParseInt(sizes[3], 10, 64)
 				region.AreaWidth = int(w)
 				region.AreaHeight = int(h)
 				region.Top = int(x)
 				region.Left = int(y)
 			} else if arr[0] == "pct" {
 				sizes := strings.Split(arr[1], ",")
-				x, _ := strconv.ParseFloat(sizes[0], 32)
-				y, _ := strconv.ParseFloat(sizes[1], 32)
-				w, _ := strconv.ParseFloat(sizes[2], 32)
-				h, _ := strconv.ParseFloat(sizes[3], 32)
+				x, _ := strconv.ParseFloat(sizes[0], 64)
+				y, _ := strconv.ParseFloat(sizes[1], 64)
+				w, _ := strconv.ParseFloat(sizes[2], 64)
+				h, _ := strconv.ParseFloat(sizes[3], 64)
 				region.AreaWidth = int(math.Ceil(float64(size.Width) * w / 100.))
 				region.AreaHeight = int(math.Ceil(float64(size.Height) * h / 100.))
 				region.Top = int(math.Ceil(float64(size.Width) * x / 100.))
@@ -108,25 +106,38 @@ func main() {
 		// ,h (force height)
 		// pct:n (resize)
 		if ps.ByName("size") != "full" {
-
 			options := bimg.Options{
 				Width: size.Width,
 				Height: size.Height,
+				Enlarge: true,
 			}
 
 			arr := strings.Split(ps.ByName("size"), ":")
 			if len(arr) == 1 {
-				sizes := strings.Split(arr[0], ",")
-				w, err := strconv.ParseInt(sizes[0], 10, 32)
+				force := strings.HasPrefix(ps.ByName("size"), "!")
+				sizes := strings.Split(strings.Trim(arr[0], "!"), ",")
+
+				w, err := strconv.ParseInt(sizes[0], 10, 64)
 				if err == nil {
 					options.Width = int(w)
 				}
-				h, err := strconv.ParseInt(sizes[1], 10, 32)
+
+				h, err := strconv.ParseInt(sizes[1], 10, 64)
 				if err == nil {
 					options.Height = int(h)
 				}
+
+				if force {
+					wr := float64(size.Width) / float64(w)
+					hr := float64(size.Height) / float64(h)
+					if wr > hr {
+						options.Height = 0
+					} else {
+						options.Width = 0
+					}
+				}
 			} else if arr[0] == "pct" {
-				pct, _ := strconv.ParseFloat(arr[1], 32)
+				pct, _ := strconv.ParseFloat(arr[1], 64)
 				options.Width = int(math.Ceil(pct / 100 * float64(size.Width)))
 				options.Height = int(math.Ceil(pct / 100 * float64(size.Height)))
 			} else {
