@@ -4,18 +4,24 @@ import (
 	"flag"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
-	"gopkg.in/h2non/bimg.v0"
-	"io"
+	"gopkg.in/h2non/bimg.v1"
+	"html/template"
+	"io/ioutil"
 	"log"
 	"math"
+	"net/http"
+	"os"
 	"strconv"
 	"strings"
-	"net/http"
 )
 
 var port = flag.String("port", "80", "Define which TCP port to use.")
 var root = flag.String("root", ".", "Define root directory.")
 var host = flag.String("host", "0.0.0.0", "Define the hostname.")
+
+type Page struct {
+	Files []os.FileInfo
+}
 
 func main() {
 	flag.Parse()
@@ -24,8 +30,13 @@ func main() {
 
 	router.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		log.Println("/")
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		io.WriteString(w, "Hello world!\n")
+
+		files, _ := ioutil.ReadDir(*root)
+		p := &Page{Files: files}
+
+		t, _ := template.ParseFiles("templates/index.html")
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		t.Execute(w, p)
 	})
 
 	router.GET("/:identifier/:region/:size/:rotation/:quality_format", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -53,6 +64,7 @@ func main() {
 		// Region
 		// ------
 		// full
+		// square
 		// x,y,w,h (in pixels)
 		// pct:x,y,w,h (in percents)
 		if ps.ByName("region") != "full" {
@@ -63,29 +75,40 @@ func main() {
 				Left: 0,
 			}
 
-			arr := strings.Split(ps.ByName("region"), ":")
-			if len(arr) == 1 {
-				sizes := strings.Split(arr[0], ",")
-				x, _ := strconv.ParseInt(sizes[0], 10, 64)
-				y, _ := strconv.ParseInt(sizes[1], 10, 64)
-				w, _ := strconv.ParseInt(sizes[2], 10, 64)
-				h, _ := strconv.ParseInt(sizes[3], 10, 64)
-				region.AreaWidth = int(w)
-				region.AreaHeight = int(h)
-				region.Top = int(x)
-				region.Left = int(y)
-			} else if arr[0] == "pct" {
-				sizes := strings.Split(arr[1], ",")
-				x, _ := strconv.ParseFloat(sizes[0], 64)
-				y, _ := strconv.ParseFloat(sizes[1], 64)
-				w, _ := strconv.ParseFloat(sizes[2], 64)
-				h, _ := strconv.ParseFloat(sizes[3], 64)
-				region.AreaWidth = int(math.Ceil(float64(size.Width) * w / 100.))
-				region.AreaHeight = int(math.Ceil(float64(size.Height) * h / 100.))
-				region.Top = int(math.Ceil(float64(size.Width) * x / 100.))
-				region.Left = int(math.Ceil(float64(size.Height) * y / 100.))
+			if ps.ByName("region") == "square" {
+				if size.Width < size.Height {
+					region.Top = (size.Height - size.Width) / 2.
+					region.AreaWidth = size.Width
+				} else {
+					region.Left = (size.Width - size.Height) / 2.
+					region.AreaWidth = size.Height
+				}
+				region.AreaHeight = region.AreaWidth
 			} else {
-				log.Fatal("Cannot do anything with " + ps.ByName("region"))
+				arr := strings.Split(ps.ByName("region"), ":")
+				if len(arr) == 1 {
+					sizes := strings.Split(arr[0], ",")
+					x, _ := strconv.ParseInt(sizes[0], 10, 64)
+					y, _ := strconv.ParseInt(sizes[1], 10, 64)
+					w, _ := strconv.ParseInt(sizes[2], 10, 64)
+					h, _ := strconv.ParseInt(sizes[3], 10, 64)
+					region.AreaWidth = int(w)
+					region.AreaHeight = int(h)
+					region.Left = int(x)
+					region.Top = int(y)
+				} else if arr[0] == "pct" {
+					sizes := strings.Split(arr[1], ",")
+					x, _ := strconv.ParseFloat(sizes[0], 64)
+					y, _ := strconv.ParseFloat(sizes[1], 64)
+					w, _ := strconv.ParseFloat(sizes[2], 64)
+					h, _ := strconv.ParseFloat(sizes[3], 64)
+					region.AreaWidth = int(math.Ceil(float64(size.Width) * w / 100.))
+					region.AreaHeight = int(math.Ceil(float64(size.Height) * h / 100.))
+					region.Left = int(math.Ceil(float64(size.Width) * x / 100.))
+					region.Top = int(math.Ceil(float64(size.Height) * y / 100.))
+				} else {
+					log.Fatal("Cannot do anything with " + ps.ByName("region"))
+				}
 			}
 
 			_, err = image.Process(region)
@@ -102,41 +125,39 @@ func main() {
 		options := bimg.Options{
 			Width: size.Width,
 			Height: size.Height,
-			Enlarge: true,
 		}
 
 		// Size
 		// ----
-		// full
+		// max, full
 		// w,h (deform)
 		// !w,h (best fit within size)
 		// w, (force width)
 		// ,h (force height)
 		// pct:n (resize)
-		if ps.ByName("size") != "full" {
+		if ps.ByName("size") != "max" && ps.ByName("size") != "full" {
 			arr := strings.Split(ps.ByName("size"), ":")
 			if len(arr) == 1 {
-				force := strings.HasPrefix(ps.ByName("size"), "!")
+				best := strings.HasPrefix(ps.ByName("size"), "!")
 				sizes := strings.Split(strings.Trim(arr[0], "!"), ",")
 
-				w, err := strconv.ParseInt(sizes[0], 10, 64)
-				if err == nil {
+				w, err_w := strconv.ParseInt(sizes[0], 10, 64)
+				h, err_h := strconv.ParseInt(sizes[1], 10, 64)
+
+				if err_w == nil && err_h == nil {
 					options.Width = int(w)
-				}
-
-				h, err := strconv.ParseInt(sizes[1], 10, 64)
-				if err == nil {
 					options.Height = int(h)
-				}
-
-				if force {
-					wr := float64(size.Width) / float64(w)
-					hr := float64(size.Height) / float64(h)
-					if wr > hr {
-						options.Height = 0
+					if best {
+						options.Enlarge = true
 					} else {
-						options.Width = 0
+						options.Force = true
 					}
+				} else if err_h != nil {
+					options.Width = int(w)
+					options.Height = 0
+				} else if err_w != nil {
+					options.Width = 0
+					options.Height = int(h)
 				}
 			} else if arr[0] == "pct" {
 				pct, _ := strconv.ParseFloat(arr[1], 64)
@@ -171,7 +192,11 @@ func main() {
 		// bitonal (not supported)
 		// default
 		if quality == "gray" {
-			options.Interpretation = bimg.INTERPRETATION_B_W
+			// FIXME: causes segmentation fault (core dumped)
+			//options.Interpretation = bimg.InterpretationGREY16
+			options.Interpretation = bimg.InterpretationBW
+		} else if quality == "bitonal" {
+			options.Interpretation = bimg.InterpretationBW
 		}
 
 		if (format == "jpg" || format == "jpeg") {
