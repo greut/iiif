@@ -26,7 +26,7 @@ The API specifications can be found on [iiif.io](http://iiif.io/api/image/2.1/in
 ### [Region](http://iiif.io/api/image/2.0/index.html#region)
 
 * `full`: the full image
-* `square`: An square area anywhere in the picture **(not supported)**
+* `square`: a square area in the picture (centered)
 * `x,y,w,h`: extract the specified region (as pixels)
 * `pct:x,y,w,h`: extract the specified region (as percentages)
 
@@ -59,11 +59,11 @@ __limitations__ bimg only supports rotations that are multiples of 90.
 * `jpg`
 * `png`
 * `webp`
+* `tiff`
 
-__limitations__ : bimg (libvips) doesn't support writing to `tiff`, `gif` or `pdf`.
+__limitations__ : bimg (libvips) doesn't support writing to `jp2`, `gif` or `pdf`.
 
 ## TODO
 
-* Error handling (400 or 500)
 * Sendfile
 * Caching

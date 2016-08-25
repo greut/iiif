@@ -15,9 +15,17 @@ import (
 	"strings"
 )
 
-var port = flag.String("port", "80", "Define which TCP port to use.")
-var root = flag.String("root", ".", "Define root directory.")
-var host = flag.String("host", "0.0.0.0", "Define the hostname.")
+var port = flag.String("port", "80", "Define which TCP port to use")
+var root = flag.String("root", ".", "Define root directory")
+var host = flag.String("host", "0.0.0.0", "Define the hostname")
+
+var qualityError = "IIIF 2.1 `quality` and `format` arguments were expected: %#v"
+var regionError = "IIIF 2.1 `region` argument is not recognized: %#v"
+var sizeError = "IIIF 2.1 `size` argument is not recognized: %#v"
+var rotationError = "IIIF 2.1 `rotation` argument is not recognized: %#v"
+var rotationMissing = "libvips cannot rotate angle that isn't a multiple of 90: %#v"
+var formatError = "IIIf 2.1 `format` argument is not yet recognized: %#v"
+var formatMissing = "libvips cannot output this format %#v as of yet"
 
 type Page struct {
 	Files []os.FileInfo
@@ -45,14 +53,17 @@ func main() {
 		quality_format := ps.ByName("quality_format")
 		arr := strings.Split(quality_format, ".")
 		if len(arr) != 2 {
-			log.Fatal("Quality and format were expected. Got: " + quality_format)
+			log.Fatalf(qualityError, quality_format)
 		}
 		quality := arr[0] // default
 		format := arr[1] // jpg
 
-		buffer, err := bimg.Read(fmt.Sprintf("%v/%v", *root, ps.ByName("identifier")))
+		filename := fmt.Sprintf("%v/%v", *root, ps.ByName("identifier"))
+		buffer, err := bimg.Read(filename)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("Cannot open file %#v: %#v", filename, err.Error())
+			http.NotFound(w, r)
+			return
 		}
 
 		image := bimg.NewImage(buffer)
@@ -88,6 +99,11 @@ func main() {
 				arr := strings.Split(ps.ByName("region"), ":")
 				if len(arr) == 1 {
 					sizes := strings.Split(arr[0], ",")
+					if len(sizes) != 4 {
+						message := fmt.Sprintf(regionError, ps.ByName("region"))
+						http.Error(w, message, 400)
+						return
+					}
 					x, _ := strconv.ParseInt(sizes[0], 10, 64)
 					y, _ := strconv.ParseInt(sizes[1], 10, 64)
 					w, _ := strconv.ParseInt(sizes[2], 10, 64)
@@ -98,6 +114,11 @@ func main() {
 					region.Top = int(y)
 				} else if arr[0] == "pct" {
 					sizes := strings.Split(arr[1], ",")
+					if len(sizes) != 4 {
+						message := fmt.Sprintf(regionError, ps.ByName("region"))
+						http.Error(w, message, 400)
+						return
+					}
 					x, _ := strconv.ParseFloat(sizes[0], 64)
 					y, _ := strconv.ParseFloat(sizes[1], 64)
 					w, _ := strconv.ParseFloat(sizes[2], 64)
@@ -107,7 +128,9 @@ func main() {
 					region.Left = int(math.Ceil(float64(size.Width) * x / 100.))
 					region.Top = int(math.Ceil(float64(size.Height) * y / 100.))
 				} else {
-					log.Fatal("Cannot do anything with " + ps.ByName("region"))
+					message := fmt.Sprintf(regionError, ps.ByName("region"))
+					http.Error(w, message, 400)
+					return
 				}
 			}
 
@@ -141,11 +164,21 @@ func main() {
 				best := strings.HasPrefix(ps.ByName("size"), "!")
 				sizes := strings.Split(strings.Trim(arr[0], "!"), ",")
 
-				w, err_w := strconv.ParseInt(sizes[0], 10, 64)
+				if len(sizes) != 2 {
+					message := fmt.Sprintf(sizeError, ps.ByName("size"))
+					http.Error(w, message, 400)
+					return
+				}
+
+				wi, err_w := strconv.ParseInt(sizes[0], 10, 64)
 				h, err_h := strconv.ParseInt(sizes[1], 10, 64)
 
-				if err_w == nil && err_h == nil {
-					options.Width = int(w)
+				if err_w != nil && err_h != nil {
+					message := fmt.Sprintf(sizeError, ps.ByName("size"))
+					http.Error(w, message, 400)
+					return
+				} else if err_w == nil && err_h == nil {
+					options.Width = int(wi)
 					options.Height = int(h)
 					if best {
 						options.Enlarge = true
@@ -153,9 +186,9 @@ func main() {
 						options.Force = true
 					}
 				} else if err_h != nil {
-					options.Width = int(w)
+					options.Width = int(wi)
 					options.Height = 0
-				} else if err_w != nil {
+				} else {
 					options.Width = 0
 					options.Height = int(h)
 				}
@@ -164,7 +197,9 @@ func main() {
 				options.Width = int(math.Ceil(pct / 100 * float64(size.Width)))
 				options.Height = int(math.Ceil(pct / 100 * float64(size.Height)))
 			} else {
-				log.Fatal("Cannot do anything with " + ps.ByName("region"))
+				message := fmt.Sprintf(sizeError, ps.ByName("size"))
+				http.Error(w, message, 400)
+				return
 			}
 		}
 
@@ -172,18 +207,21 @@ func main() {
 		// --------
 		// n angle clockwise in degrees
 		// !n angle clockwise in degrees with a flip (beforehand)
-		if ps.ByName("rotation") != "0" {
-			flip := strings.HasPrefix(ps.ByName("rotation"), "!")
-			angle, _ := strconv.ParseInt(strings.Trim(ps.ByName("rotation"), "!"), 10, 64)
+		flip := strings.HasPrefix(ps.ByName("rotation"), "!")
+		angle, err := strconv.ParseInt(strings.Trim(ps.ByName("rotation"), "!"), 10, 64)
 
-			angle = angle % 360
-			if angle % 90 != 0 {
-				log.Fatal(fmt.Sprintf("Cannot rotate angle that aren't multiples of 90: %v", angle))
-			}
-
-			options.Flip = flip
-			options.Rotate = bimg.Angle(angle)
+		if err != nil {
+			message := fmt.Sprintf(rotationError, ps.ByName("rotation"))
+			http.Error(w, message, 400)
+			return
+		} else if angle % 90 != 0 {
+			message := fmt.Sprintf(rotationMissing, ps.ByName("rotation"))
+			http.Error(w, message, 501)
+			return
 		}
+
+		options.Flip = flip
+		options.Rotate = bimg.Angle(angle % 360)
 
 		// Quality
 		// -------
@@ -191,35 +229,54 @@ func main() {
 		// gray
 		// bitonal (not supported)
 		// default
-		if quality == "gray" {
+		if quality == "color" || quality == "default" {
+			// do nothing.
+		} else if quality == "gray" {
 			// FIXME: causes segmentation fault (core dumped)
 			//options.Interpretation = bimg.InterpretationGREY16
 			options.Interpretation = bimg.InterpretationBW
 		} else if quality == "bitonal" {
 			options.Interpretation = bimg.InterpretationBW
+		} else {
+			message := fmt.Sprintf(qualityError, quality)
+			http.Error(w, message, 400)
+			return
 		}
 
-		if (format == "jpg" || format == "jpeg") {
+		if format == "jpg" || format == "jpeg" {
 			options.Type = bimg.JPEG
 			w.Header().Set("Content-Type", "image/jpg")
-		} else if (format == "png") {
+		} else if format == "png" {
 			options.Type = bimg.PNG
 			w.Header().Set("Content-Type", "image/png")
-		} else if (format == "webp") {
+		} else if format == "webp" {
 			options.Type = bimg.WEBP
 			w.Header().Set("Content-Type", "image/webp")
+		} else if format == "tif" || format == "tiff" {
+			options.Type = bimg.TIFF
+			w.Header().Set("Content-Type", "image/tiff")
+		} else if format == "gif" || format == "pdf" || format == "jp2" {
+			message := fmt.Sprintf(formatMissing, format)
+			http.Error(w, message, 501)
+			return
 		} else {
-			log.Fatal("This format is not yet supported. " + format)
+			message := fmt.Sprintf(formatError, format)
+			http.Error(w, message, 400)
+			return
 		}
 
 		_, err = image.Process(options)
 		if err != nil {
-			log.Fatal(err)
+			message := fmt.Sprintf("bimg couldn't process the image: %#v", err.Error())
+			http.Error(w, message, 500)
+			return
 		}
 
 		_, err = w.Write(image.Image())
 		if err != nil {
-			log.Fatal(err)
+			message := fmt.Sprintf("bimg counldn't write the image: %#v", err.Error())
+			http.Error(w, message, 500)
+			return
 		}
 	})
 
