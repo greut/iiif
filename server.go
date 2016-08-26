@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/julienschmidt/httprouter"
+	"github.com/gorilla/mux"
 	"gopkg.in/h2non/bimg.v1"
 	"html/template"
 	"io/ioutil"
@@ -31,34 +31,25 @@ type Page struct {
 	Files []os.FileInfo
 }
 
-func main() {
-	flag.Parse()
+func IndexHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("/")
 
-	router := httprouter.New()
+	files, _ := ioutil.ReadDir(*root)
+	p := &Page{Files: files}
 
-	router.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		log.Println("/")
+	t, _ := template.ParseFiles("templates/index.html")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	t.Execute(w, p)
+}
 
-		files, _ := ioutil.ReadDir(*root)
-		p := &Page{Files: files}
+func ImageHandler(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		log.Println(fmt.Sprintf("/%v/%v", *root, vars["identifier"]))
 
-		t, _ := template.ParseFiles("templates/index.html")
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		t.Execute(w, p)
-	})
+		quality := vars["quality"]
+		format := vars["format"]
 
-	router.GET("/:identifier/:region/:size/:rotation/:quality_format", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		log.Println(fmt.Sprintf("/%v/%v", *root, ps.ByName("identifier")))
-
-		quality_format := ps.ByName("quality_format")
-		arr := strings.Split(quality_format, ".")
-		if len(arr) != 2 {
-			log.Fatalf(qualityError, quality_format)
-		}
-		quality := arr[0] // default
-		format := arr[1] // jpg
-
-		filename := fmt.Sprintf("%v/%v", *root, ps.ByName("identifier"))
+		filename := fmt.Sprintf("%v/%v", *root, vars["identifier"])
 		buffer, err := bimg.Read(filename)
 		if err != nil {
 			log.Printf("Cannot open file %#v: %#v", filename, err.Error())
@@ -78,29 +69,30 @@ func main() {
 		// square
 		// x,y,w,h (in pixels)
 		// pct:x,y,w,h (in percents)
-		if ps.ByName("region") != "full" {
-			region := bimg.Options{
+		region := vars["region"]
+		if region != "full" {
+			opts := bimg.Options{
 				AreaWidth: size.Width,
 				AreaHeight: size.Height,
 				Top: 0,
 				Left: 0,
 			}
 
-			if ps.ByName("region") == "square" {
+			if region == "square" {
 				if size.Width < size.Height {
-					region.Top = (size.Height - size.Width) / 2.
-					region.AreaWidth = size.Width
+					opts.Top = (size.Height - size.Width) / 2.
+					opts.AreaWidth = size.Width
 				} else {
-					region.Left = (size.Width - size.Height) / 2.
-					region.AreaWidth = size.Height
+					opts.Left = (size.Width - size.Height) / 2.
+					opts.AreaWidth = size.Height
 				}
-				region.AreaHeight = region.AreaWidth
+				opts.AreaHeight = opts.AreaWidth
 			} else {
-				arr := strings.Split(ps.ByName("region"), ":")
+				arr := strings.Split(region, ":")
 				if len(arr) == 1 {
 					sizes := strings.Split(arr[0], ",")
 					if len(sizes) != 4 {
-						message := fmt.Sprintf(regionError, ps.ByName("region"))
+						message := fmt.Sprintf(regionError, region)
 						http.Error(w, message, 400)
 						return
 					}
@@ -108,14 +100,14 @@ func main() {
 					y, _ := strconv.ParseInt(sizes[1], 10, 64)
 					w, _ := strconv.ParseInt(sizes[2], 10, 64)
 					h, _ := strconv.ParseInt(sizes[3], 10, 64)
-					region.AreaWidth = int(w)
-					region.AreaHeight = int(h)
-					region.Left = int(x)
-					region.Top = int(y)
+					opts.AreaWidth = int(w)
+					opts.AreaHeight = int(h)
+					opts.Left = int(x)
+					opts.Top = int(y)
 				} else if arr[0] == "pct" {
 					sizes := strings.Split(arr[1], ",")
 					if len(sizes) != 4 {
-						message := fmt.Sprintf(regionError, ps.ByName("region"))
+						message := fmt.Sprintf(regionError, region)
 						http.Error(w, message, 400)
 						return
 					}
@@ -123,24 +115,24 @@ func main() {
 					y, _ := strconv.ParseFloat(sizes[1], 64)
 					w, _ := strconv.ParseFloat(sizes[2], 64)
 					h, _ := strconv.ParseFloat(sizes[3], 64)
-					region.AreaWidth = int(math.Ceil(float64(size.Width) * w / 100.))
-					region.AreaHeight = int(math.Ceil(float64(size.Height) * h / 100.))
-					region.Left = int(math.Ceil(float64(size.Width) * x / 100.))
-					region.Top = int(math.Ceil(float64(size.Height) * y / 100.))
+					opts.AreaWidth = int(math.Ceil(float64(size.Width) * w / 100.))
+					opts.AreaHeight = int(math.Ceil(float64(size.Height) * h / 100.))
+					opts.Left = int(math.Ceil(float64(size.Width) * x / 100.))
+					opts.Top = int(math.Ceil(float64(size.Height) * y / 100.))
 				} else {
-					message := fmt.Sprintf(regionError, ps.ByName("region"))
+					message := fmt.Sprintf(regionError, region)
 					http.Error(w, message, 400)
 					return
 				}
 			}
 
-			_, err = image.Process(region)
+			_, err = image.Process(opts)
 			if err != nil {
 				 log.Fatal(err)
 			}
 			size = bimg.ImageSize{
-				Width: region.AreaWidth,
-				Height: region.AreaHeight,
+				Width: opts.AreaWidth,
+				Height: opts.AreaHeight,
 			}
 		}
 
@@ -158,14 +150,15 @@ func main() {
 		// w, (force width)
 		// ,h (force height)
 		// pct:n (resize)
-		if ps.ByName("size") != "max" && ps.ByName("size") != "full" {
-			arr := strings.Split(ps.ByName("size"), ":")
+		s := vars["size"]
+		if s != "max" && s != "full" {
+			arr := strings.Split(s, ":")
 			if len(arr) == 1 {
-				best := strings.HasPrefix(ps.ByName("size"), "!")
+				best := strings.HasPrefix(s, "!")
 				sizes := strings.Split(strings.Trim(arr[0], "!"), ",")
 
 				if len(sizes) != 2 {
-					message := fmt.Sprintf(sizeError, ps.ByName("size"))
+					message := fmt.Sprintf(sizeError, s)
 					http.Error(w, message, 400)
 					return
 				}
@@ -174,7 +167,7 @@ func main() {
 				h, err_h := strconv.ParseInt(sizes[1], 10, 64)
 
 				if err_w != nil && err_h != nil {
-					message := fmt.Sprintf(sizeError, ps.ByName("size"))
+					message := fmt.Sprintf(sizeError, s)
 					http.Error(w, message, 400)
 					return
 				} else if err_w == nil && err_h == nil {
@@ -197,7 +190,7 @@ func main() {
 				options.Width = int(math.Ceil(pct / 100 * float64(size.Width)))
 				options.Height = int(math.Ceil(pct / 100 * float64(size.Height)))
 			} else {
-				message := fmt.Sprintf(sizeError, ps.ByName("size"))
+				message := fmt.Sprintf(sizeError, s)
 				http.Error(w, message, 400)
 				return
 			}
@@ -207,15 +200,16 @@ func main() {
 		// --------
 		// n angle clockwise in degrees
 		// !n angle clockwise in degrees with a flip (beforehand)
-		flip := strings.HasPrefix(ps.ByName("rotation"), "!")
-		angle, err := strconv.ParseInt(strings.Trim(ps.ByName("rotation"), "!"), 10, 64)
+		rotation := vars["rotation"]
+		flip := strings.HasPrefix(rotation, "!")
+		angle, err := strconv.ParseInt(strings.Trim(rotation, "!"), 10, 64)
 
 		if err != nil {
-			message := fmt.Sprintf(rotationError, ps.ByName("rotation"))
+			message := fmt.Sprintf(rotationError, rotation)
 			http.Error(w, message, 400)
 			return
 		} else if angle % 90 != 0 {
-			message := fmt.Sprintf(rotationMissing, ps.ByName("rotation"))
+			message := fmt.Sprintf(rotationMissing, rotation)
 			http.Error(w, message, 501)
 			return
 		}
@@ -278,7 +272,15 @@ func main() {
 			http.Error(w, message, 500)
 			return
 		}
-	})
+	}
+
+func main() {
+	flag.Parse()
+
+	router := mux.NewRouter()
+
+	router.HandleFunc("/", IndexHandler)
+	router.HandleFunc("/{identifier}/{region}/{size}/{rotation}/{quality}.{format}", ImageHandler)
 
 	log.Println(fmt.Sprintf("Server running on %v:%v", *host, *port))
 	panic(http.ListenAndServe(fmt.Sprintf("%v:%v", *host, *port), router))
