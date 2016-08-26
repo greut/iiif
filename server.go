@@ -64,7 +64,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, p)
 }
 
-func LevelHandler(w http.ResponseWriter, r *http.Request) {
+func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	l := Level{
 		Context: "http://iiif.io/api/image/2/context.json",
 		Id: fmt.Sprintf("http://%s/level2.json", r.Host),
@@ -79,10 +79,11 @@ func LevelHandler(w http.ResponseWriter, r *http.Request) {
 		log.Fatal("Cannot create level")
 	}
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(b)
 }
 
-func ProfileHandler(w http.ResponseWriter, r *http.Request) {
+func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	log.Println(fmt.Sprintf("/%v/%v", *root, vars["identifier"]))
 
@@ -117,6 +118,7 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		log.Fatal("Cannot create profile")
 	}
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(b)
 }
 
@@ -358,8 +360,8 @@ func main() {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/", IndexHandler)
-	router.HandleFunc("/level2.json", LevelHandler)
-	router.HandleFunc("/{identifier}/profile.json", ProfileHandler)
+	router.HandleFunc("/level2.json", ProfileHandler)
+	router.HandleFunc("/{identifier}/info.json", InfoHandler)
 	router.HandleFunc("/{identifier}/{region}/{size}/{rotation}/{quality}.{format}", ImageHandler)
 
 	log.Println(fmt.Sprintf("Server running on %v:%v", *host, *port))
