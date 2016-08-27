@@ -1,6 +1,6 @@
 # example
 
-This is a modified version of git@github.com:thisisaaronland/iiif.git
+This is a modified version of https://github.com/mejackreed/Leaflet-IIIF
 
 Modifications include:
 
