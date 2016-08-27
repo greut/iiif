@@ -88,7 +88,42 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ImageHandler(w http.ResponseWriter, r *http.Request) {
+
 	vars := mux.Vars(r)
+
+	// PLEASE VALIDATE/SANITIZE ALL OF THESE...
+
+	// Region
+	// ------
+	// full
+	// square
+	// x,y,w,h (in pixels)
+	// pct:x,y,w,h (in percents)
+
+	region := vars["region"]
+
+	// Size
+	// ----
+	// max, full
+	// w,h (deform)
+	// !w,h (best fit within size)
+	// w, (force width)
+	// ,h (force height)
+	// pct:n (resize)
+	s := vars["size"]
+
+	// Rotation
+	// --------
+	// n angle clockwise in degrees
+	// !n angle clockwise in degrees with a flip (beforehand)
+	rotation := vars["rotation"]
+
+	// Quality
+	// -------
+	// color
+	// gray
+	// bitonal (not supported)
+	// default
 
 	rel_path := r.URL.Path
 	cache_path := path.Join(*cache, rel_path)
@@ -129,79 +164,16 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 
 	width := im.Width()
 	height := im.Height()
-	
 
-	// Region
-	// ------
-	// full
-	// square
-	// x,y,w,h (in pixels)
-	// pct:x,y,w,h (in percents)
-	region := vars["region"]
 	if region != "full" {
-		opts := bimg.Options{
-			AreaWidth:  size.Width,
-			AreaHeight: size.Height,
-			Top:        0,
-			Left:       0,
-		}
 
-		if region == "square" {
-			if size.Width < size.Height {
-				opts.Top = (size.Height - size.Width) / 2.
-				opts.AreaWidth = size.Width
-			} else {
-				opts.Left = (size.Width - size.Height) / 2.
-				opts.AreaWidth = size.Height
-			}
-			opts.AreaHeight = opts.AreaWidth
-		} else {
-			arr := strings.Split(region, ":")
-			if len(arr) == 1 {
-				sizes := strings.Split(arr[0], ",")
-				if len(sizes) != 4 {
-					message := fmt.Sprintf(regionError, region)
-					http.Error(w, message, 400)
-					return
-				}
-				x, _ := strconv.ParseInt(sizes[0], 10, 64)
-				y, _ := strconv.ParseInt(sizes[1], 10, 64)
-				w, _ := strconv.ParseInt(sizes[2], 10, 64)
-				h, _ := strconv.ParseInt(sizes[3], 10, 64)
-				opts.AreaWidth = int(w)
-				opts.AreaHeight = int(h)
-				opts.Left = int(x)
-				opts.Top = int(y)
-			} else if arr[0] == "pct" {
-				sizes := strings.Split(arr[1], ",")
-				if len(sizes) != 4 {
-					message := fmt.Sprintf(regionError, region)
-					http.Error(w, message, 400)
-					return
-				}
-				x, _ := strconv.ParseFloat(sizes[0], 64)
-				y, _ := strconv.ParseFloat(sizes[1], 64)
-				w, _ := strconv.ParseFloat(sizes[2], 64)
-				h, _ := strconv.ParseFloat(sizes[3], 64)
-				opts.AreaWidth = int(math.Ceil(float64(size.Width) * w / 100.))
-				opts.AreaHeight = int(math.Ceil(float64(size.Height) * h / 100.))
-				opts.Left = int(math.Ceil(float64(size.Width) * x / 100.))
-				opts.Top = int(math.Ceil(float64(size.Height) * y / 100.))
-			} else {
-				message := fmt.Sprintf(regionError, region)
-				http.Error(w, message, 400)
-				return
-			}
-		}
+		err := im.Crop()
 
-		_, err = image.Process(opts)
 		if err != nil {
-			log.Fatal(err)
-		}
-		size = bimg.ImageSize{
-			Width:  opts.AreaWidth,
-			Height: opts.AreaHeight,
-		}
+		   http.Error(w, err.Error(), http.StatusInternalServerError)
+		   return
+	        }
+
 	}
 
 	// Size, Rotation and Quality are made in a single Process call.
@@ -210,15 +182,6 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		Height: size.Height,
 	}
 
-	// Size
-	// ----
-	// max, full
-	// w,h (deform)
-	// !w,h (best fit within size)
-	// w, (force width)
-	// ,h (force height)
-	// pct:n (resize)
-	s := vars["size"]
 	if s != "max" && s != "full" {
 		arr := strings.Split(s, ":")
 		if len(arr) == 1 {
@@ -264,11 +227,6 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Rotation
-	// --------
-	// n angle clockwise in degrees
-	// !n angle clockwise in degrees with a flip (beforehand)
-	rotation := vars["rotation"]
 	flip := strings.HasPrefix(rotation, "!")
 	angle, err := strconv.ParseInt(strings.Trim(rotation, "!"), 10, 64)
 
@@ -285,12 +243,6 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	options.Flip = flip
 	options.Rotate = bimg.Angle(angle % 360)
 
-	// Quality
-	// -------
-	// color
-	// gray
-	// bitonal (not supported)
-	// default
 	if quality == "color" || quality == "default" {
 		// do nothing.
 	} else if quality == "gray" {
@@ -375,7 +327,6 @@ func main() {
 
 	router := mux.NewRouter()
 
-	router.HandleFunc("/", IndexHandler)
 	router.HandleFunc("/level2.json", ProfileHandler)
 	router.HandleFunc("/{identifier}/info.json", InfoHandler)
 	router.HandleFunc("/{identifier}/{region}/{size}/{rotation}/{quality}.{format}", ImageHandler)
