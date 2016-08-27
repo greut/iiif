@@ -5,7 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
-	"gopkg.in/h2non/bimg.v1"
+	"github.com/thisisaaronland/iiif/image"
+	"github.com/thisisaaronland/iiif/level"
+	"github.com/thisisaaronland/iiif/profile"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -31,95 +33,55 @@ var rotationMissing = "libvips cannot rotate angle that isn't a multiple of 90: 
 var formatError = "IIIf 2.1 `format` argument is not yet recognized: %#v"
 var formatMissing = "libvips cannot output this format %#v as of yet"
 
-type Level struct {
-	Context   string   `json:@profile`
-	Id        string   `json:"@id"`
-	Type      string   `json:"@type"` // Optional or iiif:Image
-	Formats   []string `json:"formats"`
-	Qualities []string `json:"qualities"`
-	Supports  []string `json:"supports"`
-}
-
-type Page struct {
-	Files []os.FileInfo
-}
-
-type Profile struct {
-	Context  string   `json:"@profile"`
-	Id       string   `json:"@id"`
-	Type     string   `json:"@type"` // Optional or iiif:Image
-	Protocol string   `json:"protocol"`
-	Width    int      `json:"width"`
-	Height   int      `json:"height"`
-	Profile  []string `json:"profile"`
-	//	Sizes    []string `json:"sizes"` // Optional, existing/supported sizes.
-	//	Tiles    []string `json:"tiles"` // Optional
-}
-
-func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("/")
-
-	files, _ := ioutil.ReadDir(*root)
-	p := &Page{Files: files}
-
-	t, _ := template.ParseFiles("templates/index.html")
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	t.Execute(w, p)
-}
-
 func ProfileHandler(w http.ResponseWriter, r *http.Request) {
-	l := Level{
-		Context:   "http://iiif.io/api/image/2/context.json",
-		Id:        fmt.Sprintf("http://%s/level2.json", r.Host),
-		Type:      "iiif:ImageProfile",
-		Formats:   []string{"jpg", "png", "webp"},
-		Qualities: []string{"gray", "default"},
-		Supports:  []string{},
+
+     	l, err := level.NewLevel2(r.Host)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	b, err := json.Marshal(l)
+
 	if err != nil {
-		log.Fatal("Cannot create level")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(b)
 }
 
 func InfoHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	log.Println(fmt.Sprintf("/%v/%v", *root, vars["identifier"]))
 
-	filename := fmt.Sprintf("%v/%v", *root, vars["identifier"])
-	buffer, err := bimg.Read(filename)
+	vars := mux.Vars(r)
+
+	id := vars["identifier"]
+	filename := fmt.Sprintf("%v/%v", *root, id)
+
+	im, err := image.NewImage(*root, id)
+
 	if err != nil {
-		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
-		http.NotFound(w, r)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	image := bimg.NewImage(buffer)
-	size, err := image.Size()
-	if err != nil {
-		log.Fatal(err)
-	}
+	p, err := profile.NewProfile(host, im)
 
-	p := Profile{
-		Context:  "http://iiif.io/api/image/2/context.json",
-		Id:       fmt.Sprintf("http://%s/%s", r.Host, vars["identifier"]),
-		Type:     "iiif:Image",
-		Protocol: "http://iiif.io/api/image",
-		Width:    size.Width,
-		Height:   size.Height,
-		Profile: []string{
-			fmt.Sprintf("http://%s/level2.json", r.Host),
-		},
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	b, err := json.Marshal(p)
+
 	if err != nil {
-		log.Fatal("Cannot create profile")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(b)
@@ -149,19 +111,25 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	quality := vars["quality"]
 	format := vars["format"]
 
-	filename := fmt.Sprintf("%v/%v", *root, vars["identifier"])
-	buffer, err := bimg.Read(filename)
+	id := vars["identifier"]
+
+	im, err := image.NewImage(*root, id)
+
 	if err != nil {
-		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
-		http.NotFound(w, r)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	image := bimg.NewImage(buffer)
-	size, err := image.Size()
+	width, height, err := im.Size()
+
 	if err != nil {
-		log.Fatal(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
+
+	width := im.Width()
+	height := im.Height()
+	
 
 	// Region
 	// ------
@@ -360,6 +328,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = image.Process(options)
+
 	if err != nil {
 		message := fmt.Sprintf("bimg couldn't process the image: %#v", err.Error())
 		http.Error(w, message, 500)
