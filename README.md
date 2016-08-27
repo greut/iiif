@@ -1,5 +1,7 @@
 # iiif
 
+[![Build Status](https://travis-ci.org/greut/iiif.svg?branch=master)](https://travis-ci.org/greut/iiif)
+
 A sample and quite dumb web server to serve pictures following the iiif API.
 
 ## setup
