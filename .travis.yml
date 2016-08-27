@@ -5,9 +5,12 @@ go:
   - tip
 
 script:
-  - diff -u <(echo -n) <(gofmt -s -d ./)
+  - diff -u <(echo -n) <(gofmt -s -d .)
   - go tool vet .
   - golint
+  - go build
 
 before_script:
+  - go get -u github.com/gorilla/mux
+  - go get -u gopkg.in/h2non/bimg.v1
   - go get -u github.com/golang/lint/golint
