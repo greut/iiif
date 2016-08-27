@@ -1,0 +1,13 @@
+language: go
+
+go:
+  - 1.7
+  - tip
+
+script:
+  - diff -u <(echo -n) <(gofmt -s -d ./)
+  - go tool vet .
+  - golint
+
+before_script:
+  - go get -u github.com/golang/lint/golint
