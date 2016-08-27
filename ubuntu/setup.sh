@@ -2,8 +2,11 @@
 
 apt-get update
 apt-get upgrade -y
-apt-get install -y git tcsh emacs24-nox htop sysstat ufw fail2ban unattended-upgrades unzip
+apt-get install -y git htop sysstat ufw fail2ban unattended-upgrades unzip
 dpkg-reconfigure -f noninteractive --priority=low unattended-upgrades
+
+# YMMV - adjust to taste...
+apt-get install -y emacs24-nox 
 
 VERSION=`cat /etc/os-release | grep VERSION_ID | awk -F '=' '{ print $2 }'`
 
@@ -18,7 +21,7 @@ then
     make install
     ldconfig
     cd -
-    rm -rf vips-8.3.3/
+    rm -rf vips-8.3.3
 else
     apt-get install -y libvips-dev
 fi
