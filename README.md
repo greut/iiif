@@ -10,10 +10,12 @@ libvips is required by [bimg](https://github.com/h2non/bimg/).
 $ go build
 $ ./iiif --help
 
-$ ./iiif --host 0.0.0.0 --port 8080 --root images
+$ ./iiif --host 0.0.0.0 --port 8080 --root images --cache cache
 
-$ go run server.go --port 8080 --root images
+$ go run server.go --port 8080 --root images --cache cache
 ```
+
+_`--cache` is where individual image tiles (or crops) are stored rather than the source images._
 
 ## iiif image API 2.1
 
