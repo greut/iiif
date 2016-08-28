@@ -1,26 +1,27 @@
 package cache
 
 import (
-	"errors"
-	gocache "github.com/patrickmn/go-cache"
+	"github.com/allegro/bigcache"
 	"github.com/thisisaaronland/iiif"
 	"time"
 )
 
 type MemoryCache struct {
 	iiif.Cache
-	cache gocache.Cache
+	cache *bigcache.BigCache
 }
 
-func NewMemoryCache(config *iiif.Config) (*MemoryCache, error) {
+func NewMemoryCache(config iiif.CacheConfig) (*MemoryCache, error) {
 
-	ttl := 5 * time.Minute // read from config
-	flush := 30 * time.Second
+	bconfig := bigcache.DefaultConfig(10 * time.Minute)
+	bcache, err := bigcache.NewBigCache(bconfig)
 
-	c := gocache.New(ttl, flush)
+	if err != nil {
+		return nil, err
+	}
 
 	mc := MemoryCache{
-		cache: c,
+		cache: bcache,
 	}
 
 	return &mc, nil
@@ -28,25 +29,23 @@ func NewMemoryCache(config *iiif.Config) (*MemoryCache, error) {
 
 func (mc *MemoryCache) Get(key string) ([]byte, error) {
 
-	rsp, found := mc.cache.Get(key)
+	rsp, err := mc.cache.Get(key)
 
-	if !found {
-		err := errors.New("unknown key")
+	if err != nil {
 		return nil, err
 	}
 
-	return rsp.([]byte), err
+	return rsp, nil
 }
 
 func (mc *MemoryCache) Set(key string, body []byte) error {
 
-	mc.cache.Set(key, body, gocache.DefaultExpiration)
+	mc.cache.Set(key, body)
 
 	return nil
 }
 
 func (mc *MemoryCache) Unset(key string) error {
 
-	mc.cache.Delete(key)
 	return nil
 }

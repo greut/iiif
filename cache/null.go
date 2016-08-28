@@ -9,7 +9,7 @@ type NullCache struct {
 	iiif.Cache
 }
 
-func NewNullCache(config *iiif.Config) (*NullCache, error) {
+func NewNullCache(config iiif.CacheConfig) (*NullCache, error) {
 
 	c := NullCache{}
 

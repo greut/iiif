@@ -1,43 +1,57 @@
 package iiif
 
 import (
-       "encoding/json"
-       "io/ioutil"
+	"encoding/json"
+	"io/ioutil"
 )
 
 type Config struct {
-     Cache  CacheConfig
+	Images      ImagesConfig      `json:"images"`
+	Derivatives DerivativesConfig `json:"derivatives"`
+}
+
+type ImagesConfig struct {
+	Source SourceConfig `json:"source"`
+	Cache  CacheConfig  `json:"cache"`
+}
+
+type DerivativesConfig struct {
+	Cache CacheConfig `json:"cache"`
+}
+
+type SourceConfig struct {
+	Name string `json:"name"`
+	Path string `json:"path"`
 }
 
 type CacheConfig struct {
-     Name string
-     Path string
+	Name string `json:"name"`
+	Path string `json:"path"`
 }
 
 type Cache interface {
-     Get(string) ([]byte, error)
-     Set(string, []byte) error
-     Unset(string) error
+	Get(string) ([]byte, error)
+	Set(string, []byte) error
+	Unset(string) error
 }
 
 type Profile interface {
-
 }
 
 func NewConfigFromFile(file string) (*Config, error) {
 
-     body, err := ioutil.ReadFile(file)
+	body, err := ioutil.ReadFile(file)
 
-     if err != nil {
-     	return nil, err
+	if err != nil {
+		return nil, err
 	}
 
 	c := Config{}
 	err = json.Unmarshal(body, &c)
 
 	if err != nil {
-	   return nil, err
-	   }
+		return nil, err
+	}
 
-	   return &c, nil
+	return &c, nil
 }

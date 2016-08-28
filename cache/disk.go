@@ -13,9 +13,9 @@ type DiskCache struct {
 	root string
 }
 
-func NewDiskCache(config *iiif.Config) (*DiskCache, error) {
+func NewDiskCache(config iiif.CacheConfig) (*DiskCache, error) {
 
-	root := config.Cache.Path
+	root := config.Path
 	_, err := os.Stat(root)
 
 	if os.IsNotExist(err) {

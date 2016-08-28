@@ -21,7 +21,8 @@ build:	fmt bin
 
 deps:	rmdeps
 	@GOPATH=$(GOPATH) go get -u "github.com/facebookgo/grace/gracehttp"
-	@GOPATH=$(GOPATH) go get -u "github.com/patrickmn/go-cache"
+	@GOPATH=$(GOPATH) go get -u "github.com/gorilla/mux"	
+	@GOPATH=$(GOPATH) go get -u "github.com/allegro/bigcache"
 	@GOPATH=$(GOPATH) go get -u "gopkg.in/h2non/bimg.v1"
 
 vendor: deps
@@ -32,7 +33,7 @@ vendor: deps
 	rm -rf src
 
 fmt:
-	go fmt cmd/*.go
+	go fmt *.go
 	go fmt cache/*.go
 	go fmt image/*.go
 	go fmt level/*.go

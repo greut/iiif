@@ -1,16 +1,15 @@
 package cache
 
 import (
-	"errors"
 	"github.com/thisisaaronland/iiif"
 )
 
-func NewCacheFromConfig(config *iiif.Config) (iiif.Cache, error) {
+func NewCacheFromConfig(config iiif.CacheConfig) (iiif.Cache, error) {
 
-	if config.Cache.Name == "Disk" {
+	if config.Name == "Disk" {
 		cache, err := NewDiskCache(config)
 		return cache, err
-	} else if config.Cache.Name == "Memory" {
+	} else if config.Name == "Memory" {
 		cache, err := NewMemoryCache(config)
 		return cache, err
 	} else {

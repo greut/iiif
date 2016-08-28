@@ -6,6 +6,9 @@ import (
 	"flag"
 	"fmt"
 	"github.com/facebookgo/grace/gracehttp"
+	"github.com/gorilla/mux"
+	"github.com/thisisaaronland/iiif"
+	"github.com/thisisaaronland/iiif/cache"
 	"github.com/thisisaaronland/iiif/image"
 	"github.com/thisisaaronland/iiif/level"
 	"github.com/thisisaaronland/iiif/profile"
@@ -15,10 +18,12 @@ import (
 	"strings"
 )
 
-var port = flag.String("port", "80", "Define which TCP port to use")
-var root = flag.String("root", ".", "Define root directory")
-var cache = flag.String("cache", ".", "Define cache directory")
-var host = flag.String("host", "0.0.0.0", "Define the hostname")
+var host = flag.String("host", "localhost", "Define the hostname")
+var port = flag.Int("port", 8080, "Define which TCP port to use")
+var root = flag.String("root", ".", "Define root directory")	// deprecated
+var config = flag.String("config", ".", "config")
+
+var derivativeCache	       iiif.Cache
 
 func ExpvarHandlerFunc(host string) http.HandlerFunc {
 
@@ -81,7 +86,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	id := query.Get("identifier")
 
-	source, err := image.NewSourceImage(id, sourceCache)
+	source, err := image.NewSourceImage(*root, id)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -137,7 +142,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	source, err := image.NewSourceImage(id, sourceCache)
+	source, err := image.NewSourceImage(*root, id)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -190,21 +195,39 @@ func main() {
 
 	flag.Parse()
 
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/level2.json", ProfileHandler)
-	mux.HandleFunc("/{identifier}/info.json", InfoHandler)
-	mux.HandleFunc("/{identifier}/{region}/{size}/{rotation}/{quality}.{format}", ImageHandler)
-
-	expvarHandler := ExpvarHandlerFunc(*host)
-	mux.HandleFunc("/debug/vars", expvarHandler)
-
-	endpoint := fmt.Sprintf("%s:%d", *host, *port)
-
-	err := gracehttp.Serve(&http.Server{Addr: endpoint, Handler: mux})
+	config, err := iiif.NewConfigFromFile(*config)
 
 	if err != nil {
 		log.Fatal(err)
+		os.Exit(1)
+	}
+ 
+	derivativeCache, err = cache.NewCacheFromConfig(config.Derivatives.Cache)
+
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+
+	*root = config.Images.Source.Path
+
+	router := mux.NewRouter()
+	// router := http.NewServeMux()
+
+	router.HandleFunc("/level2.json", ProfileHandler)
+	router.HandleFunc("/{identifier}/info.json", InfoHandler)
+	router.HandleFunc("/{identifier}/{region}/{size}/{rotation}/{quality}.{format}", ImageHandler)
+
+	expvarHandler := ExpvarHandlerFunc(*host)
+	router.HandleFunc("/debug/vars", expvarHandler)
+
+	endpoint := fmt.Sprintf("%s:%d", *host, *port)
+
+	err = gracehttp.Serve(&http.Server{Addr: endpoint, Handler: router})
+
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
 	}
 
 	os.Exit(0)

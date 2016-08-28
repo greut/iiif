@@ -25,6 +25,9 @@ type SourceImage struct {
 	bimg *bimg.Image
 }
 
+// please write me...
+// func NewImageFromSource(source *iiii.Source, id string) (*Image, error)
+
 func NewSourceImage(root string, id string) (*SourceImage, error) {
 
 	filename := filepath.Join(root, id)
