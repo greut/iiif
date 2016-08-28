@@ -6,3 +6,7 @@ src/
 server
 init.sh
 *~
+src
+!vendor/src
+bin
+!bin/README.md
