@@ -12,6 +12,7 @@ self:   prep rmdeps
 	cp -r image src/github.com/thisisaaronland/iiif/
 	cp -r level src/github.com/thisisaaronland/iiif/
 	cp -r profile src/github.com/thisisaaronland/iiif/
+	cp -r source src/github.com/thisisaaronland/iiif/
 	cp -r vendor/src/* src/
 
 rmdeps:
@@ -38,6 +39,7 @@ fmt:
 	go fmt image/*.go
 	go fmt level/*.go
 	go fmt profile/*.go
+	go fmt source/*.go
 
 bin: 	self
 	@GOPATH=$(GOPATH) go build -o bin/iiif-server cmd/iiif-server.go

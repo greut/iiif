@@ -12,6 +12,7 @@ import (
 	"github.com/thisisaaronland/iiif/image"
 	"github.com/thisisaaronland/iiif/level"
 	"github.com/thisisaaronland/iiif/profile"
+	"github.com/thisisaaronland/iiif/source"
 	"log"
 	"net/http"
 	"os"
@@ -20,9 +21,9 @@ import (
 
 var host = flag.String("host", "localhost", "Define the hostname")
 var port = flag.Int("port", 8080, "Define which TCP port to use")
-var root = flag.String("root", ".", "Define root directory")	// deprecated
 var config = flag.String("config", ".", "config")
 
+var imageSource			   source.Source
 var derivativeCache	       iiif.Cache
 
 func ExpvarHandlerFunc(host string) http.HandlerFunc {
@@ -83,10 +84,10 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 
 func InfoHandler(w http.ResponseWriter, r *http.Request) {
 
-	query := r.URL.Query()
-	id := query.Get("identifier")
+	vars := mux.Vars(r)
+	id := vars["identifier"]
 
-	source, err := image.NewSourceImage(*root, id)
+	source, err := image.NewImageFromSource(imageSource, id)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -125,15 +126,14 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := r.URL.Query()
+	vars := mux.Vars(r)
+	id := vars["identifier"]
 
-	id := query.Get("identifier")
-
-	region := query.Get("region")
-	size := query.Get("size")
-	rotation := query.Get("rotation")
-	quality := query.Get("quality")
-	format := query.Get("format")
+	region := vars["region"]
+	size := vars["size"]
+	rotation := vars["rotation"]
+	quality := vars["quality"]
+	format := vars["format"]
 
 	transformation, err := image.NewTransformation(region, size, rotation, quality, format)
 
@@ -142,14 +142,14 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	source, err := image.NewSourceImage(*root, id)
+	im, err := image.NewImageFromSource(imageSource, id)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	derivative, err := source.Transform(transformation)
+	derivative, err := im.Transform(transformation)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -157,7 +157,9 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go func(k string, v []byte) {
+
 		derivativeCache.Set(k, v)
+
 	}(rel_path, derivative)
 
 	w.Header().Set("Content-Type", "image/jpg") // FIX ME
@@ -209,10 +211,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	*root = config.Images.Source.Path
+	imageSource, err = source.NewSourceFromConfig(config.Images)	// fix me - the naming is all weird
+
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
 
 	router := mux.NewRouter()
-	// router := http.NewServeMux()
 
 	router.HandleFunc("/level2.json", ProfileHandler)
 	router.HandleFunc("/{identifier}/info.json", InfoHandler)
