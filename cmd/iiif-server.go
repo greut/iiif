@@ -2,19 +2,16 @@ package main
 
 import (
 	"encoding/json"
+	"expvar"
 	"flag"
 	"fmt"
+	"github.com/facebookgo/grace/gracehttp"
 	"github.com/thisisaaronland/iiif/image"
 	"github.com/thisisaaronland/iiif/level"
 	"github.com/thisisaaronland/iiif/profile"
-	"io/ioutil"
 	"log"
-	"math"
 	"net/http"
 	"os"
-	"path"
-	"path/filepath"
-	"strconv"
 	"strings"
 )
 
@@ -22,14 +19,6 @@ var port = flag.String("port", "80", "Define which TCP port to use")
 var root = flag.String("root", ".", "Define root directory")
 var cache = flag.String("cache", ".", "Define cache directory")
 var host = flag.String("host", "0.0.0.0", "Define the hostname")
-
-var qualityError = "IIIF 2.1 `quality` and `format` arguments were expected: %#v"
-var regionError = "IIIF 2.1 `region` argument is not recognized: %#v"
-var sizeError = "IIIF 2.1 `size` argument is not recognized: %#v"
-var rotationError = "IIIF 2.1 `rotation` argument is not recognized: %#v"
-var rotationMissing = "libvips cannot rotate angle that isn't a multiple of 90: %#v"
-var formatError = "IIIf 2.1 `format` argument is not yet recognized: %#v"
-var formatMissing = "libvips cannot output this format %#v as of yet"
 
 func ExpvarHandlerFunc(host string) http.HandlerFunc {
 
@@ -99,7 +88,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p, err := profile.NewProfile(host, source)
+	p, err := profile.NewProfile(*host, source)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -133,15 +122,17 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query()
 
+	id := query.Get("identifier")
+
 	region := query.Get("region")
 	size := query.Get("size")
 	rotation := query.Get("rotation")
 	quality := query.Get("quality")
 	format := query.Get("format")
 
-	params, err := image.NewTransformation(region, size, rotation, quality, format)
+	transformation, err := image.NewTransformation(region, size, rotation, quality, format)
 
-	if !ok {
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -153,7 +144,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	derivative, err := source.Transform(params)
+	derivative, err := source.Transform(transformation)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

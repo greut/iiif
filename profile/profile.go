@@ -1,6 +1,7 @@
 package profile
 
 import (
+	"fmt"
 	"github.com/thisisaaronland/iiif/image"
 )
 
@@ -16,9 +17,9 @@ type Profile struct {
 	//	Tiles    []string `json:"tiles"` // Optional
 }
 
-func NewProfile(host string, im *image.Image) (*Profile, error){
+func NewProfile(host string, im image.Image) (*Profile, error) {
 
-	p := profile.Profile{
+	p := Profile{
 		Context:  "http://iiif.io/api/image/2/context.json",
 		Id:       fmt.Sprintf("http://%s/%s", host, im.Identifier()),
 		Type:     "iiif:Image",

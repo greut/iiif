@@ -53,31 +53,31 @@ func NewTransformation(region string, size string, rotation string, quality stri
 	var ok bool
 	var err error
 
-	ok, err = image.IsValidRegion(region)
+	ok, err = IsValidRegion(region)
 
 	if !ok {
 		return nil, err
 	}
 
-	ok, err = image.IsValidSize(size)
+	ok, err = IsValidSize(size)
 
 	if !ok {
 		return nil, err
 	}
 
-	ok, err = image.IsValidRotation(rotation)
+	ok, err = IsValidRotation(rotation)
 
 	if !ok {
 		return nil, err
 	}
 
-	ok, err = image.IsValidQuality(quality)
+	ok, err = IsValidQuality(quality)
 
 	if !ok {
 		return nil, err
 	}
 
-	ok, err = image.IsValidFormat(format)
+	ok, err = IsValidFormat(format)
 
 	if !ok {
 		return nil, err

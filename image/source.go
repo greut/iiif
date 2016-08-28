@@ -1,59 +1,77 @@
 package image
 
 import (
+	"errors"
+	"fmt"
 	"gopkg.in/h2non/bimg.v1"
+	"math"
 	"path/filepath"
-	"strings"
 	"strconv"
+	"strings"
 )
 
+var qualityError = "IIIF 2.1 `quality` and `format` arguments were expected: %#v"
+var regionError = "IIIF 2.1 `region` argument is not recognized: %#v"
+var sizeError = "IIIF 2.1 `size` argument is not recognized: %#v"
+var rotationError = "IIIF 2.1 `rotation` argument is not recognized: %#v"
+var rotationMissing = "libvips cannot rotate angle that isn't a multiple of 90: %#v"
+var formatError = "IIIf 2.1 `format` argument is not yet recognized: %#v"
+var formatMissing = "libvips cannot output this format %#v as of yet"
+
 type SourceImage struct {
-     Image
-     source string
-     id string
-     bimg bimg.Image
+	Image
+	root string
+	id   string
+	bimg *bimg.Image
 }
 
-function NewSourceImage (source string, id string) (*SourceImage, error) {
+func NewSourceImage(root string, id string) (*SourceImage, error) {
 
-	 filename := filepath.Join(source, id)
+	filename := filepath.Join(root, id)
 
-	 buffer, err := bimg.Read(filename)
+	buffer, err := bimg.Read(filename)
 
-	 if err != nil {
-	    return nil, error
-	 }
+	if err != nil {
+		return nil, err
+	}
 
-	 bimg := bimg.NewImage(buffer)
+	bimg := bimg.NewImage(buffer)
 
-	 source := SourceImage{
-	 	source: source,
-		id: id,	      
-	        bimg: bimg,
-	 }
+	source := SourceImage{
+		root: root,
+		id:   id,
+		bimg: bimg,
+	}
 
-	 return &source, nil
+	return &source, nil
 }
 
 func (src *SourceImage) Identifier() string {
-     return src.id
+	return src.id
 }
 
-func (src *SourceImage) Height (int){
+func (src *SourceImage) Height() int {
 	size, _ := src.bimg.Size()
 	return size.Height
 }
 
-func (src *SourceImage) Width (int){
+func (src *SourceImage) Width() int {
 	size, _ := src.bimg.Size()
 	return size.Width
 }
 
-func (src *SourceImage) Tranform (t *image.Transformation) ([]byte, error){
+func (src *SourceImage) Tranform(t *Transformation) ([]byte, error) {
 
-	if region != "full" {
-     w := src.Width()
-     h := src.Height()
+	size, err := src.bimg.Size()
+
+	if err != nil {
+		return nil, err
+	}
+
+	if t.Region != "full" {
+
+		w := size.Width
+		h := size.Height
 
 		opts := bimg.Options{
 			AreaWidth:  w,
@@ -62,7 +80,7 @@ func (src *SourceImage) Tranform (t *image.Transformation) ([]byte, error){
 			Left:       0,
 		}
 
-		if region == "square" {
+		if t.Region == "square" {
 
 			if w < h {
 				opts.Top = (h - w) / 2.
@@ -76,15 +94,15 @@ func (src *SourceImage) Tranform (t *image.Transformation) ([]byte, error){
 
 		} else {
 
-			arr := strings.Split(region, ":")
+			arr := strings.Split(t.Region, ":")
 
 			if len(arr) == 1 {
 
 				sizes := strings.Split(arr[0], ",")
 
 				if len(sizes) != 4 {
-					message := fmt.Sprintf(regionError, region)
-					return errors.New(message)
+					message := fmt.Sprintf(regionError, t.Region)
+					return nil, errors.New(message)
 				}
 
 				x, _ := strconv.ParseInt(sizes[0], 10, 64)
@@ -102,8 +120,8 @@ func (src *SourceImage) Tranform (t *image.Transformation) ([]byte, error){
 				sizes := strings.Split(arr[1], ",")
 
 				if len(sizes) != 4 {
-					message := fmt.Sprintf(regionError, region)
-					return errors.New(message)
+					message := fmt.Sprintf(regionError, t.Region)
+					return nil, errors.New(message)
 				}
 
 				x, _ := strconv.ParseFloat(sizes[0], 64)
@@ -117,113 +135,109 @@ func (src *SourceImage) Tranform (t *image.Transformation) ([]byte, error){
 				opts.Top = int(math.Ceil(float64(size.Height) * y / 100.))
 
 			} else {
-				message := fmt.Sprintf(regionError, region)
-				return errors.New(message)
+				message := fmt.Sprintf(regionError, t.Region)
+				return nil, errors.New(message)
 			}
 		}
 
-		_, err = src.bimg.Process(opts)
+		_, err := src.bimg.Process(opts)
 
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		/*
 		size = bimg.ImageSize{
 			Width:  opts.AreaWidth,
 			Height: opts.AreaHeight,
 		}
-		*/
-	
-	// Size, Rotation and Quality are made in a single Process call.
-	options := bimg.Options{
-		Width:  size.Width,
-		Height: size.Height,
-	}
 
-	if s != "max" && s != "full" {
-		arr := strings.Split(s, ":")
-		if len(arr) == 1 {
-			best := strings.HasPrefix(s, "!")
-			sizes := strings.Split(strings.Trim(arr[0], "!"), ",")
+		// Size, Rotation and Quality are made in a single Process call.
 
-			if len(sizes) != 2 {
-				message := fmt.Sprintf(sizeError, s)
-				http.Error(w, message, 400)
-				return
-			}
+		options := bimg.Options{
+			Width:  size.Width,
+			Height: size.Height,
+		}
 
-			wi, err_w := strconv.ParseInt(sizes[0], 10, 64)
-			h, err_h := strconv.ParseInt(sizes[1], 10, 64)
+		if t.Size != "max" && t.Size != "full" {
 
-			if err_w != nil && err_h != nil {
-				message := fmt.Sprintf(sizeError, s)
-				http.Error(w, message, 400)
-				return
-			} else if err_w == nil && err_h == nil {
-				options.Width = int(wi)
-				options.Height = int(h)
-				if best {
-					options.Enlarge = true
-				} else {
-					options.Force = true
+			arr := strings.Split(t.Size, ":")
+
+			if len(arr) == 1 {
+				best := strings.HasPrefix(t.Size, "!")
+				sizes := strings.Split(strings.Trim(arr[0], "!"), ",")
+
+				if len(sizes) != 2 {
+					message := fmt.Sprintf(sizeError, t.Size)
+					return nil, errors.New(message)
 				}
-			} else if err_h != nil {
-				options.Width = int(wi)
-				options.Height = 0
+
+				wi, err_w := strconv.ParseInt(sizes[0], 10, 64)
+				h, err_h := strconv.ParseInt(sizes[1], 10, 64)
+
+				if err_w != nil && err_h != nil {
+					message := fmt.Sprintf(sizeError, t.Size)
+					return nil, errors.New(message)
+
+				} else if err_w == nil && err_h == nil {
+					options.Width = int(wi)
+					options.Height = int(h)
+					if best {
+						options.Enlarge = true
+					} else {
+						options.Force = true
+					}
+				} else if err_h != nil {
+					options.Width = int(wi)
+					options.Height = 0
+				} else {
+					options.Width = 0
+					options.Height = int(h)
+				}
+			} else if arr[0] == "pct" {
+				pct, _ := strconv.ParseFloat(arr[1], 64)
+				options.Width = int(math.Ceil(pct / 100 * float64(size.Width)))
+				options.Height = int(math.Ceil(pct / 100 * float64(size.Height)))
 			} else {
-				options.Width = 0
-				options.Height = int(h)
+				message := fmt.Sprintf(sizeError, t.Size)
+				return nil, errors.New(message)
 			}
-		} else if arr[0] == "pct" {
-			pct, _ := strconv.ParseFloat(arr[1], 64)
-			options.Width = int(math.Ceil(pct / 100 * float64(size.Width)))
-			options.Height = int(math.Ceil(pct / 100 * float64(size.Height)))
+		}
+
+		flip := strings.HasPrefix(t.Rotation, "!")
+		angle, err := strconv.ParseInt(strings.Trim(t.Rotation, "!"), 10, 64)
+
+		if err != nil {
+			message := fmt.Sprintf(rotationError, t.Rotation)
+			return nil, errors.New(message)
+
+		} else if angle%90 != 0 {
+			message := fmt.Sprintf(rotationMissing, t.Rotation)
+			return nil, errors.New(message)
+		}
+
+		options.Flip = flip
+		options.Rotate = bimg.Angle(angle % 360)
+
+		if t.Quality == "color" || t.Quality == "default" {
+			// do nothing.
+		} else if t.Quality == "gray" {
+			// FIXME: causes segmentation fault (core dumped)
+			//options.Interpretation = bimg.InterpretationGREY16
+			options.Interpretation = bimg.InterpretationBW
+		} else if t.Quality == "bitonal" {
+			options.Interpretation = bimg.InterpretationBW
 		} else {
-			message := fmt.Sprintf(sizeError, s)
-			http.Error(w, message, 400)
-			return
+			message := fmt.Sprintf(qualityError, t.Quality)
+			return nil, errors.New(message)
+		}
+
+		_, err = src.bimg.Process(options)
+
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	flip := strings.HasPrefix(rotation, "!")
-	angle, err := strconv.ParseInt(strings.Trim(rotation, "!"), 10, 64)
-
-	if err != nil {
-		message := fmt.Sprintf(rotationError, rotation)
-		http.Error(w, message, 400)
-		return
-	} else if angle%90 != 0 {
-		message := fmt.Sprintf(rotationMissing, rotation)
-		http.Error(w, message, 501)
-		return
-	}
-
-	options.Flip = flip
-	options.Rotate = bimg.Angle(angle % 360)
-
-	if quality == "color" || quality == "default" {
-		// do nothing.
-	} else if quality == "gray" {
-		// FIXME: causes segmentation fault (core dumped)
-		//options.Interpretation = bimg.InterpretationGREY16
-		options.Interpretation = bimg.InterpretationBW
-	} else if quality == "bitonal" {
-		options.Interpretation = bimg.InterpretationBW
-	} else {
-		message := fmt.Sprintf(qualityError, quality)
-		http.Error(w, message, 400)
-		return
-	}
-}
-
-	bytes, err = image.Process(options)
-
-	if err != nil {
-		message := fmt.Sprintf("bimg couldn't process the image: %#v", err.Error())
-		http.Error(w, message, 500)
-		return
-	}
-
+	bytes := src.bimg.Image()
 	return bytes, nil
 }

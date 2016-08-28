@@ -1,11 +1,11 @@
 package level
 
 import (
-       "fmt"
+	"fmt"
 )
 
 type Level2 struct {
-     Level
+	Level
 	Context   string   `json:@profile`
 	Id        string   `json:"@id"`
 	Type      string   `json:"@type"` // Optional or iiif:Image
@@ -16,7 +16,7 @@ type Level2 struct {
 
 func NewLevel2(host string) (*Level2, error) {
 
-        id := fmt.Sprintf("http://%s/level2.json", host)
+	id := fmt.Sprintf("http://%s/level2.json", host)
 
 	l := Level2{
 		Context:   "http://iiif.io/api/image/2/context.json",
