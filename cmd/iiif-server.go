@@ -7,7 +7,6 @@ import (
 	"github.com/thisisaaronland/iiif/image"
 	"github.com/thisisaaronland/iiif/level"
 	"github.com/thisisaaronland/iiif/profile"
-	"html/template"
 	"io/ioutil"
 	"log"
 	"math"
@@ -169,39 +168,29 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 	return
 
-
-		err := im.Crop()
-
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-	}
-
 	/*
 
-	if format == "jpg" || format == "jpeg" {
-		options.Type = bimg.JPEG
-		w.Header().Set("Content-Type", "image/jpg")
-	} else if format == "png" {
-		options.Type = bimg.PNG
-		w.Header().Set("Content-Type", "image/png")
-	} else if format == "webp" {
-		options.Type = bimg.WEBP
-		w.Header().Set("Content-Type", "image/webp")
-	} else if format == "tif" || format == "tiff" {
-		options.Type = bimg.TIFF
-		w.Header().Set("Content-Type", "image/tiff")
-	} else if format == "gif" || format == "pdf" || format == "jp2" {
-		message := fmt.Sprintf(formatMissing, format)
-		http.Error(w, message, 501)
-		return
-	} else {
-		message := fmt.Sprintf(formatError, format)
-		http.Error(w, message, 400)
-		return
-	}
+		if format == "jpg" || format == "jpeg" {
+			options.Type = bimg.JPEG
+			w.Header().Set("Content-Type", "image/jpg")
+		} else if format == "png" {
+			options.Type = bimg.PNG
+			w.Header().Set("Content-Type", "image/png")
+		} else if format == "webp" {
+			options.Type = bimg.WEBP
+			w.Header().Set("Content-Type", "image/webp")
+		} else if format == "tif" || format == "tiff" {
+			options.Type = bimg.TIFF
+			w.Header().Set("Content-Type", "image/tiff")
+		} else if format == "gif" || format == "pdf" || format == "jp2" {
+			message := fmt.Sprintf(formatMissing, format)
+			http.Error(w, message, 501)
+			return
+		} else {
+			message := fmt.Sprintf(formatError, format)
+			http.Error(w, message, 400)
+			return
+		}
 
 	*/
 }

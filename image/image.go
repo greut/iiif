@@ -1,10 +1,9 @@
 package image
 
-import (
-)
+import ()
 
 type Image interface {
-     Identifier() string
-     Height() int
-     Width() int
+	Identifier() string
+	Height() int
+	Width() int
 }

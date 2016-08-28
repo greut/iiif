@@ -20,10 +20,6 @@ type Cache interface {
      Unset(string) error
 }
 
-type Level interface {
-
-}
-
 type Profile interface {
 
 }

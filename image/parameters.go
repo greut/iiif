@@ -1,95 +1,95 @@
 package image
 
-	// full
-	// square
-	// x,y,w,h (in pixels)
-	// pct:x,y,w,h (in percents)
+// full
+// square
+// x,y,w,h (in pixels)
+// pct:x,y,w,h (in percents)
 
-func IsValidRegion (region string) (bool, error) {
-     return true, nil
+func IsValidRegion(region string) (bool, error) {
+	return true, nil
 }
 
-	// max, full
-	// w,h (deform)
-	// !w,h (best fit within size)
-	// w, (force width)
-	// ,h (force height)
-	// pct:n (resize)
+// max, full
+// w,h (deform)
+// !w,h (best fit within size)
+// w, (force width)
+// ,h (force height)
+// pct:n (resize)
 
-func IsValidSize (size string) (bool, error) {
-     return true, nil
+func IsValidSize(size string) (bool, error) {
+	return true, nil
 }
 
-	// n angle clockwise in degrees
-	// !n angle clockwise in degrees with a flip (beforehand)
+// n angle clockwise in degrees
+// !n angle clockwise in degrees with a flip (beforehand)
 
-func IsValidRotation(rotation string) (bool,error) {
-     return true, nil
+func IsValidRotation(rotation string) (bool, error) {
+	return true, nil
 }
 
-	// color
-	// gray
-	// bitonal (not supported)
-	// default
+// color
+// gray
+// bitonal (not supported)
+// default
 
 func IsValidQuality(quality string) (bool, error) {
-     return true, nil
+	return true, nil
 }
 
 func IsValidFormat(format string) (bool, error) {
-     return true, nil
+	return true, nil
 }
 
 type Transformation struct {
-     Region string
-     Size string
-     Rotation string
-     Quality string
-     Format string
+	Region   string
+	Size     string
+	Rotation string
+	Quality  string
+	Format   string
 }
 
-func NewTransformation (region string, size string, rotation string, quality string, format string) (*Transformation, error){
+func NewTransformation(region string, size string, rotation string, quality string, format string) (*Transformation, error) {
 
-       ok bool
-       err error
+	var ok bool
+	var err error
 
-	  ok, err = image.IsValidRegion(region)
+	ok, err = image.IsValidRegion(region)
 
-	  if !ok {
+	if !ok {
 		return nil, err
-	  }
+	}
 
-	  ok, err := image.IsValidSize(size)
+	ok, err = image.IsValidSize(size)
 
-	  if !ok {
+	if !ok {
 		return nil, err
-	  }
+	}
 
-	  ok, err := image.IsValidRotation(rotation)
+	ok, err = image.IsValidRotation(rotation)
 
-	  if !ok {
+	if !ok {
 		return nil, err
-	  }
+	}
 
-	  ok, err := image.IsValidQuality(quality)
+	ok, err = image.IsValidQuality(quality)
 
-	  if !ok {
+	if !ok {
 		return nil, err
-	  }
+	}
 
-	  ok, err := image.IsValidFormat(format)
+	ok, err = image.IsValidFormat(format)
 
-	  if !ok {
+	if !ok {
 		return nil, err
-	  }
+	}
 
-	  t := Transformation{
-	    Region: region,
-	    Size: size,
-	    Rotation: rotation,
-	    Quality: quality,
-	    Format: format,
-	  }
+	t := Transformation{
+		Region:   region,
+		Size:     size,
+		Rotation: rotation,
+		Quality:  quality,
+		Format:   format,
+	}
 
-	  return &t, nil
+	return &t, nil
 }

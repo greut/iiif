@@ -1,13 +1,14 @@
 package image
 
 import (
-	"github.com/thisisaaronland/iiif/image"
 	"gopkg.in/h2non/bimg.v1"
 	"path/filepath"
+	"strings"
+	"strconv"
 )
 
-type Image struct {
-     image.Image
+type SourceImage struct {
+     Image
      source string
      id string
      bimg bimg.Image
@@ -25,35 +26,34 @@ function NewSourceImage (source string, id string) (*SourceImage, error) {
 
 	 bimg := bimg.NewImage(buffer)
 
-	 image := Image{
+	 source := SourceImage{
 	 	source: source,
 		id: id,	      
 	        bimg: bimg,
 	 }
 
-	 return &image, nil
-	 size, err := image.Size()
+	 return &source, nil
 }
 
-func (im *Image) Identifier() string {
-     return im.id
+func (src *SourceImage) Identifier() string {
+     return src.id
 }
 
-func (im *Image) Height (int){
-	size, _ := im.bimg.Size()
+func (src *SourceImage) Height (int){
+	size, _ := src.bimg.Size()
 	return size.Height
 }
 
-func (im *Image) Width (int){
-	size, _ := im.bimg.Size()
+func (src *SourceImage) Width (int){
+	size, _ := src.bimg.Size()
 	return size.Width
 }
 
-func (im *Image) Tranform (t *image.Transformation) (*image.DerivativeImage, error){
+func (src *SourceImage) Tranform (t *image.Transformation) ([]byte, error){
 
 	if region != "full" {
-     w := im.Width()
-     h := im.Height()
+     w := src.Width()
+     h := src.Height()
 
 		opts := bimg.Options{
 			AreaWidth:  w,
@@ -122,7 +122,7 @@ func (im *Image) Tranform (t *image.Transformation) (*image.DerivativeImage, err
 			}
 		}
 
-		_, err = image.Process(opts)
+		_, err = src.bimg.Process(opts)
 
 		if err != nil {
 			return err

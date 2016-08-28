@@ -2,8 +2,8 @@ package cache
 
 import (
 	"errors"
-	"github.com/thisisaaronland/iiif"
 	gocache "github.com/patrickmn/go-cache"
+	"github.com/thisisaaronland/iiif"
 	"time"
 )
 
@@ -14,13 +14,13 @@ type MemoryCache struct {
 
 func NewMemoryCache(config *iiif.Config) (*MemoryCache, error) {
 
-        ttl := 5*time.Minute	// read from config
-	flush := 30*time.Second
+	ttl := 5 * time.Minute // read from config
+	flush := 30 * time.Second
 
-     	c := gocache.New(ttl, flush)  
+	c := gocache.New(ttl, flush)
 
 	mc := MemoryCache{
-	   cache: c,
+		cache: c,
 	}
 
 	return &mc, nil
@@ -28,7 +28,7 @@ func NewMemoryCache(config *iiif.Config) (*MemoryCache, error) {
 
 func (mc *MemoryCache) Get(key string) ([]byte, error) {
 
-     	rsp, found := mc.cache.Get(key)
+	rsp, found := mc.cache.Get(key)
 
 	if !found {
 		err := errors.New("unknown key")
@@ -40,13 +40,13 @@ func (mc *MemoryCache) Get(key string) ([]byte, error) {
 
 func (mc *MemoryCache) Set(key string, body []byte) error {
 
-     	mc.cache.Set(key, body, gocache.DefaultExpiration)
+	mc.cache.Set(key, body, gocache.DefaultExpiration)
 
 	return nil
 }
 
 func (mc *MemoryCache) Unset(key string) error {
 
-        mc.cache.Delete(key)
+	mc.cache.Delete(key)
 	return nil
 }

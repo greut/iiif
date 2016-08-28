@@ -16,5 +16,5 @@ func NewCacheFromConfig(config *iiif.Config) (iiif.Cache, error) {
 	} else {
 		cache, err := NewNullCache(config)
 		return cache, err
-        }
+	}
 }

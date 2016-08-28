@@ -33,7 +33,10 @@ vendor: deps
 
 fmt:
 	go fmt cmd/*.go
-	go fmt *.go
+	go fmt cache/*.go
+	go fmt image/*.go
+	go fmt level/*.go
+	go fmt profile/*.go
 
 bin: 	self
 	@GOPATH=$(GOPATH) go build -o bin/iiif-server cmd/iiif-server.go
