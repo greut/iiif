@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang=en>
+    <head>
+        <meta charset=utf-8>
+        <title>{{.Image}} Leaflet</title>
+        <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.css">
+        <style>
+#map {height: 90vh;}
+        </style>
+    </head>
+    <body>
+        <div id="map"></div>
+        <p>Kudos to <a href="https://github.com/mejackreed/Leaflet-IIIF">Jack Reed</a>.</p>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+        <script src="http://mejackreed.github.io/Leaflet-IIIF/leaflet-iiif.js"></script>
+        <script>
+L.map('map', {center: [0, 0], crs: L.CRS.Simple, zoom: 0})
+ .addLayer(L.tileLayer.iiif('/{{.Image}}/info.json', {'quality': 'default'}))
+        </script>
+    </body>
+</html>

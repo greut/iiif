@@ -4,5 +4,7 @@ images/
 pkg/
 src/
 
+bower_components
+
 server
 init.sh

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang=en>
+    <head>
+        <meta charset=utf-8>
+        <title>{{.Image}} OpenSeadragon</title>
+        <style>
+.openseadragon
+{
+    width:      800px;
+    height:     600px;
+    border:     1px solid black;
+    color:      #333; /* text color for messages */
+    background-color: black;
+}
+.openseadragon.front-page {
+    height: 586px;
+}
+.openseadragon-small
+{
+    width:      100px;
+    height:     80px;
+    border:     1px solid black;
+    color:      #333; /* text color for messages */
+    background-color: black;
+}
+        </style>
+    </head>
+    <body>
+        <div id="zoom" class="openseadragon"></div>
+        <script src="/assets/openseadragon/built-openseadragon/openseadragon/openseadragon.min.js"></script>
+        <script>
+OpenSeadragon({
+    id: "zoom",
+    prefixUrl: "/assets/openseadragon/built-openseadragon/openseadragon/images/",
+    tileSources: [
+        "/{{.Image}}/info.json"
+    ]
+})
+        </script>
+        <p>Install OpenSeadragon first.</p>
+        <pre><code>
+$ bower install openseadragon
+        </code></pre>
+    </body>
+</html>

@@ -38,23 +38,34 @@ type Level struct {
 	Supports  []string `json:"supports"`
 }
 
+// ProfileSize contains the information for the available sizes
+type ProfileSize struct {
+	Width  int `json:"width"`
+	Height int `json:"height"`
+}
+
+// ProfileTile contains the information to deal with tiles.
+type ProfileTile struct {
+	ScaleFactors []int `json:"scaleFactors"`
+	Width        int   `json:"width"`
+	Height       int   `json:"height"`
+}
+
 // Profile contains the technical properties about an image.
 type Profile struct {
-	Context  string   `json:"@profile"`
-	ID       string   `json:"@id"`
-	Type     string   `json:"@type"` // Optional or iiif:Image
-	Protocol string   `json:"protocol"`
-	Width    int      `json:"width"`
-	Height   int      `json:"height"`
-	Profile  []string `json:"profile"`
-	// Size  []string `json:"sizes"` // Optional, existing/supported sizes.
-	// Tile  []string `json:"tiles"` // Optional
+	Context  string        `json:"@profile"`
+	ID       string        `json:"@id"`
+	Type     string        `json:"@type"` // Optional or iiif:Image
+	Protocol string        `json:"protocol"`
+	Width    int           `json:"width"`
+	Height   int           `json:"height"`
+	Profile  []string      `json:"profile"`
+	Sizes    []ProfileSize `json:"sizes"`
+	Tiles    []ProfileTile `json:"tiles"`
 }
 
 // IndexHandler responds to the service homepage.
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("/")
-
 	files, _ := ioutil.ReadDir(*root)
 
 	p := &struct{ Files []os.FileInfo }{Files: files}
@@ -87,7 +98,6 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 // InfoHandler responds to the image technical properties.
 func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Println(fmt.Sprintf("/%v/%v", *root, vars["identifier"]))
 
 	filename := fmt.Sprintf("%v/%v", *root, vars["identifier"])
 	buffer, err := bimg.Read(filename)
@@ -124,10 +134,49 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
+// OpenSeadragonHandler responds to the image zooming interface using OSD
+func OpenSeadragonHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	identifier := vars["identifier"]
+
+	filename := fmt.Sprintf("%v/%v", *root, identifier)
+	_, err := os.Stat(filename)
+	if err != nil {
+		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
+		http.NotFound(w, r)
+		return
+	}
+
+	p := &struct{ Image string }{Image: identifier}
+
+	t, _ := template.ParseFiles("templates/openseadragon.html")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	t.Execute(w, p)
+}
+
+// LeafletHandler responds to the image zooming interface using Leaflet
+func LeafletHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	identifier := vars["identifier"]
+
+	filename := fmt.Sprintf("%v/%v", *root, identifier)
+	_, err := os.Stat(filename)
+	if err != nil {
+		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
+		http.NotFound(w, r)
+		return
+	}
+
+	p := &struct{ Image string }{Image: identifier}
+
+	t, _ := template.ParseFiles("templates/leaflet.html")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	t.Execute(w, p)
+}
+
 // ImageHandler responds to the IIIF 2.1 Image API.
 func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Println(fmt.Sprintf("/%v/%v", *root, vars["identifier"]))
 
 	quality := vars["quality"]
 	format := vars["format"]
@@ -306,7 +355,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	// gray
 	// bitonal (not supported)
 	// default
-	if quality == "color" || quality == "default" {
+	if quality == "color" || quality == "default" || quality == "native" {
 		// do nothing.
 	} else if quality == "gray" {
 		// FIXME: causes segmentation fault (core dumped)
@@ -361,10 +410,15 @@ func main() {
 
 	router := mux.NewRouter()
 
-	router.HandleFunc("/", IndexHandler)
+	router.PathPrefix("/assets").Handler(
+		http.StripPrefix("/assets",
+			http.FileServer(http.Dir("bower_components"))))
 	router.HandleFunc("/level2.json", ProfileHandler)
 	router.HandleFunc("/{identifier}/info.json", InfoHandler)
 	router.HandleFunc("/{identifier}/{region}/{size}/{rotation}/{quality}.{format}", ImageHandler)
+	router.HandleFunc("/{identifier}/openseadragon", OpenSeadragonHandler)
+	router.HandleFunc("/{identifier}/leaflet", LeafletHandler)
+	router.HandleFunc("/", IndexHandler)
 
 	log.Println(fmt.Sprintf("Server running on %v:%v", *host, *port))
 	panic(http.ListenAndServe(fmt.Sprintf("%v:%v", *host, *port), router))
