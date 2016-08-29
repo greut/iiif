@@ -145,8 +145,11 @@ func ImageHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 
 		if err == nil {
 
-			w.Header().Set("Content-Type", "image/jpg") // FIX ME
-			w.Write(body)
+			source, _ := iiifsource.NewMemorySource(body)
+			image, _ := iiifimage.NewImageFromSource(source, "cache")
+
+			w.Header().Set("Content-Type", image.ContentType())
+			w.Write(image.Body())
 			return
 		}
 
@@ -173,7 +176,7 @@ func ImageHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 			return
 		}
 
-		d, err := image.Transform(transformation)
+		err = image.Transform(transformation)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -184,10 +187,10 @@ func ImageHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 
 			cache.Set(k, im.Body())
 
-		}(rel_path, d)
+		}(rel_path, image)
 
-		w.Header().Set("Content-Type", "image/jpg") // FIX ME
-		w.Write(d.Body())
+		w.Header().Set("Content-Type", image.ContentType())
+		w.Write(image.Body())
 		return
 	}
 

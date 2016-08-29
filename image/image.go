@@ -50,11 +50,24 @@ func (im *Image) Body() []byte {
 }
 
 func (im *Image) Format() string {
-	return "jpeg" // FIX ME
+	return im.bimg.Type()
 }
 
 func (im *Image) ContentType() string {
-	return "image/jpg" // FIX ME
+
+	format := im.Format()
+
+	if format == "jpg" || format == "jpeg" {
+		return "image/jpg"
+	} else if format == "png" {
+		return "image/png"
+	} else if format == "webp" {
+		return "image/webp"
+	} else if format == "tif" || format == "tiff" {
+		return "image/tiff"
+	} else {
+		return ""
+	}
 }
 
 func (im *Image) Identifier() string {
@@ -71,12 +84,12 @@ func (im *Image) Width() int {
 	return size.Width
 }
 
-func (im *Image) Transform(t *Transformation) (*Image, error) {
+func (im *Image) Transform(t *Transformation) error {
 
 	size, err := im.bimg.Size()
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if t.Region != "full" {
@@ -113,7 +126,7 @@ func (im *Image) Transform(t *Transformation) (*Image, error) {
 
 				if len(sizes) != 4 {
 					message := fmt.Sprintf(regionError, t.Region)
-					return nil, errors.New(message)
+					return errors.New(message)
 				}
 
 				x, _ := strconv.ParseInt(sizes[0], 10, 64)
@@ -132,7 +145,7 @@ func (im *Image) Transform(t *Transformation) (*Image, error) {
 
 				if len(sizes) != 4 {
 					message := fmt.Sprintf(regionError, t.Region)
-					return nil, errors.New(message)
+					return errors.New(message)
 				}
 
 				x, _ := strconv.ParseFloat(sizes[0], 64)
@@ -147,14 +160,14 @@ func (im *Image) Transform(t *Transformation) (*Image, error) {
 
 			} else {
 				message := fmt.Sprintf(regionError, t.Region)
-				return nil, errors.New(message)
+				return errors.New(message)
 			}
 		}
 
 		_, err := im.bimg.Process(opts)
 
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		size = bimg.ImageSize{
@@ -179,7 +192,7 @@ func (im *Image) Transform(t *Transformation) (*Image, error) {
 
 				if len(sizes) != 2 {
 					message := fmt.Sprintf(sizeError, t.Size)
-					return nil, errors.New(message)
+					return errors.New(message)
 				}
 
 				wi, err_w := strconv.ParseInt(sizes[0], 10, 64)
@@ -187,7 +200,7 @@ func (im *Image) Transform(t *Transformation) (*Image, error) {
 
 				if err_w != nil && err_h != nil {
 					message := fmt.Sprintf(sizeError, t.Size)
-					return nil, errors.New(message)
+					return errors.New(message)
 
 				} else if err_w == nil && err_h == nil {
 					options.Width = int(wi)
@@ -210,7 +223,7 @@ func (im *Image) Transform(t *Transformation) (*Image, error) {
 				options.Height = int(math.Ceil(pct / 100 * float64(size.Height)))
 			} else {
 				message := fmt.Sprintf(sizeError, t.Size)
-				return nil, errors.New(message)
+				return errors.New(message)
 			}
 		}
 
@@ -219,11 +232,11 @@ func (im *Image) Transform(t *Transformation) (*Image, error) {
 
 		if err != nil {
 			message := fmt.Sprintf(rotationError, t.Rotation)
-			return nil, errors.New(message)
+			return errors.New(message)
 
 		} else if angle%90 != 0 {
 			message := fmt.Sprintf(rotationMissing, t.Rotation)
-			return nil, errors.New(message)
+			return errors.New(message)
 		}
 
 		options.Flip = flip
@@ -239,21 +252,16 @@ func (im *Image) Transform(t *Transformation) (*Image, error) {
 			options.Interpretation = bimg.InterpretationBW
 		} else {
 			message := fmt.Sprintf(qualityError, t.Quality)
-			return nil, errors.New(message)
+			return errors.New(message)
 		}
 
 		_, err = im.bimg.Process(options)
 
 		if err != nil {
-			return nil, err
+			return err
 		}
+
 	}
 
-	source, err := source.NewMemorySource(im.Body())
-
-	if err != nil {
-		return nil, err
-	}
-
-	return NewImageFromSource(source, "fixme")
+	return nil
 }
