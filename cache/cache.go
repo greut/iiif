@@ -2,18 +2,19 @@ package cache
 
 import (
 	"github.com/thisisaaronland/iiif"
+	"github.com/thisisaaronland/iiif/config"
 )
 
-func NewCacheFromConfig(config iiif.CacheConfig) (iiif.Cache, error) {
+func NewCacheFromConfig(cfg config.CacheConfig) (iiif.Cache, error) {
 
-	if config.Name == "Disk" {
-		cache, err := NewDiskCache(config)
+	if cfg.Name == "Disk" {
+		cache, err := NewDiskCache(cfg)
 		return cache, err
-	} else if config.Name == "Memory" {
-		cache, err := NewMemoryCache(config)
+	} else if cfg.Name == "Memory" {
+		cache, err := NewMemoryCache(cfg)
 		return cache, err
 	} else {
-		cache, err := NewNullCache(config)
+		cache, err := NewNullCache(cfg)
 		return cache, err
 	}
 }

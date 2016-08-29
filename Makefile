@@ -9,6 +9,7 @@ self:   prep rmdeps
 	mkdir -p src/github.com/thisisaaronland/iiif
 	cp iiif.go src/github.com/thisisaaronland/iiif/
 	cp -r cache src/github.com/thisisaaronland/iiif/
+	cp -r config src/github.com/thisisaaronland/iiif/
 	cp -r image src/github.com/thisisaaronland/iiif/
 	cp -r level src/github.com/thisisaaronland/iiif/
 	cp -r profile src/github.com/thisisaaronland/iiif/

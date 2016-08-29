@@ -2,6 +2,7 @@ package cache
 
 import (
 	"github.com/thisisaaronland/iiif"
+	"github.com/thisisaaronland/iiif/config"
 	"io/ioutil"
 	"os"
 	"path"
@@ -13,9 +14,9 @@ type DiskCache struct {
 	root string
 }
 
-func NewDiskCache(config iiif.CacheConfig) (*DiskCache, error) {
+func NewDiskCache(cfg config.CacheConfig) (*DiskCache, error) {
 
-	root := config.Path
+	root := cfg.Path
 	_, err := os.Stat(root)
 
 	if os.IsNotExist(err) {

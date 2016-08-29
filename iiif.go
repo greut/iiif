@@ -1,33 +1,6 @@
 package iiif
 
-import (
-	"encoding/json"
-	"io/ioutil"
-)
-
-type Config struct {
-	Images      ImagesConfig      `json:"images"`
-	Derivatives DerivativesConfig `json:"derivatives"`
-}
-
-type ImagesConfig struct {
-	Source SourceConfig `json:"source"`
-	Cache  CacheConfig  `json:"cache"`
-}
-
-type DerivativesConfig struct {
-	Cache CacheConfig `json:"cache"`
-}
-
-type SourceConfig struct {
-	Name string `json:"name"`
-	Path string `json:"path"`
-}
-
-type CacheConfig struct {
-	Name string `json:"name"`
-	Path string `json:"path"`
-}
+import ()
 
 type Cache interface {
 	Get(string) ([]byte, error)
@@ -35,23 +8,14 @@ type Cache interface {
 	Unset(string) error
 }
 
-type Profile interface {
+type Image interface {
+	Body() ([]byte, error)
+	Format() string
+	ContentType() string
 }
 
-func NewConfigFromFile(file string) (*Config, error) {
+type Level interface {
+}
 
-	body, err := ioutil.ReadFile(file)
-
-	if err != nil {
-		return nil, err
-	}
-
-	c := Config{}
-	err = json.Unmarshal(body, &c)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &c, nil
+type Profile interface {
 }

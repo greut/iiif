@@ -2,17 +2,17 @@ package source
 
 import (
 	"errors"
-	"github.com/thisisaaronland/iiif"
+	"github.com/thisisaaronland/iiif/config"
 )
 
 type Source interface {
 	Read(uri string) ([]byte, error)
 }
 
-func NewSourceFromConfig(config iiif.ImagesConfig) (Source, error) {
+func NewSourceFromConfig(cfg config.ImagesConfig) (Source, error) {
 
-	if config.Source.Name == "Disk" {
-		cache, err := NewDiskSource(config)
+	if cfg.Source.Name == "Disk" {
+		cache, err := NewDiskSource(cfg)
 		return cache, err
 	} else {
 		err := errors.New("Unknown source type")

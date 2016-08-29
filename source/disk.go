@@ -3,6 +3,7 @@ package source
 import (
 	"github.com/thisisaaronland/iiif"
 	"github.com/thisisaaronland/iiif/cache"
+	"github.com/thisisaaronland/iiif/config"
 	"io/ioutil"
 	"path/filepath"
 )
@@ -13,16 +14,16 @@ type DiskSource struct {
 	cache iiif.Cache
 }
 
-func NewDiskSource(config iiif.ImagesConfig) (*DiskSource, error) {
+func NewDiskSource(cfg config.ImagesConfig) (*DiskSource, error) {
 
-	ch, err := cache.NewCacheFromConfig(config.Cache)
+	ch, err := cache.NewCacheFromConfig(cfg.Cache)
 
 	if err != nil {
 		return nil, err
 	}
 
 	ds := DiskSource{
-		root:  config.Source.Path,
+		root:  cfg.Source.Path,
 		cache: ch,
 	}
 

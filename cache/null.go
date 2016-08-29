@@ -3,13 +3,14 @@ package cache
 import (
 	"errors"
 	"github.com/thisisaaronland/iiif"
+	"github.com/thisisaaronland/iiif/config"
 )
 
 type NullCache struct {
 	iiif.Cache
 }
 
-func NewNullCache(config iiif.CacheConfig) (*NullCache, error) {
+func NewNullCache(cfg config.CacheConfig) (*NullCache, error) {
 
 	c := NullCache{}
 

@@ -7,26 +7,19 @@ import (
 	"fmt"
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/gorilla/mux"
-	"github.com/thisisaaronland/iiif"
-	"github.com/thisisaaronland/iiif/cache"
-	"github.com/thisisaaronland/iiif/image"
-	"github.com/thisisaaronland/iiif/level"
-	"github.com/thisisaaronland/iiif/profile"
-	"github.com/thisisaaronland/iiif/source"
+	iiifcache "github.com/thisisaaronland/iiif/cache"
+	iiifconfig "github.com/thisisaaronland/iiif/config"
+	iiifimage "github.com/thisisaaronland/iiif/image"
+	iiiflevel "github.com/thisisaaronland/iiif/level"
+	iiifprofile "github.com/thisisaaronland/iiif/profile"
+	iiifsource "github.com/thisisaaronland/iiif/source"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 )
 
-var host = flag.String("host", "localhost", "Define the hostname")
-var port = flag.Int("port", 8080, "Define which TCP port to use")
-var config = flag.String("config", ".", "config")
-
-var imageSource			   source.Source
-var derivativeCache	       iiif.Cache
-
-func ExpvarHandlerFunc(host string) http.HandlerFunc {
+func ExpvarHandlerFunc(host string) (http.HandlerFunc, error) {
 
 	f := func(w http.ResponseWriter, r *http.Request) {
 
@@ -58,160 +51,179 @@ func ExpvarHandlerFunc(host string) http.HandlerFunc {
 		fmt.Fprintf(w, "\n}\n")
 	}
 
-	return http.HandlerFunc(f)
+	return http.HandlerFunc(f), nil
 }
 
-func ProfileHandler(w http.ResponseWriter, r *http.Request) {
+func ProfileHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 
-	l, err := level.NewLevel2(r.Host)
+	f := func(w http.ResponseWriter, r *http.Request) {
 
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		l, err := iiiflevel.NewLevel2(r.Host)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		b, err := json.Marshal(l)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Write(b)
 	}
 
-	b, err := json.Marshal(l)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Write(b)
+	return http.HandlerFunc(f), nil
 }
 
-func InfoHandler(w http.ResponseWriter, r *http.Request) {
+func InfoHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 
-	vars := mux.Vars(r)
-	id := vars["identifier"]
-
-	source, err := image.NewImageFromSource(imageSource, id)
+	source, err := iiifsource.NewSourceFromConfig(config.Images)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, err
 	}
 
-	p, err := profile.NewProfile(*host, source)
+	f := func(w http.ResponseWriter, r *http.Request) {
 
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		vars := mux.Vars(r)
+		id := vars["identifier"]
+
+		image, err := iiifimage.NewImageFromSource(source, id)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		profile, err := iiifprofile.NewProfile(r.Host, image)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		b, err := json.Marshal(profile)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Write(b)
+
 	}
 
-	b, err := json.Marshal(p)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Write(b)
+	return http.HandlerFunc(f), nil
 }
 
-func ImageHandler(w http.ResponseWriter, r *http.Request) {
+func ImageHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 
-	rel_path := r.URL.Path
+	source, err := iiifsource.NewSourceFromConfig(config.Images)
 
-	body, err := derivativeCache.Get(rel_path)
+	if err != nil {
+		return nil, err
+	}
 
-	if err == nil {
+	cache, err := iiifcache.NewCacheFromConfig(config.Derivatives.Cache)
+
+	if err != nil {
+		return nil, err
+	}
+
+	f := func(w http.ResponseWriter, r *http.Request) {
+
+		rel_path := r.URL.Path
+
+		body, err := cache.Get(rel_path)
+
+		if err == nil {
+
+			w.Header().Set("Content-Type", "image/jpg") // FIX ME
+			w.Write(body)
+			return
+		}
+
+		vars := mux.Vars(r)
+		id := vars["identifier"]
+
+		region := vars["region"]
+		size := vars["size"]
+		rotation := vars["rotation"]
+		quality := vars["quality"]
+		format := vars["format"]
+
+		transformation, err := iiifimage.NewTransformation(region, size, rotation, quality, format)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		image, err := iiifimage.NewImageFromSource(source, id)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		derivative, err := image.Transform(transformation)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		go func(k string, v []byte) {
+
+			cache.Set(k, v)
+
+		}(rel_path, derivative)
 
 		w.Header().Set("Content-Type", "image/jpg") // FIX ME
 		w.Write(body)
 		return
 	}
 
-	vars := mux.Vars(r)
-	id := vars["identifier"]
-
-	region := vars["region"]
-	size := vars["size"]
-	rotation := vars["rotation"]
-	quality := vars["quality"]
-	format := vars["format"]
-
-	transformation, err := image.NewTransformation(region, size, rotation, quality, format)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	im, err := image.NewImageFromSource(imageSource, id)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	derivative, err := im.Transform(transformation)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	go func(k string, v []byte) {
-
-		derivativeCache.Set(k, v)
-
-	}(rel_path, derivative)
-
-	w.Header().Set("Content-Type", "image/jpg") // FIX ME
-	w.Write(body)
-	return
-
-	/*
-
-		if format == "jpg" || format == "jpeg" {
-			options.Type = bimg.JPEG
-			w.Header().Set("Content-Type", "image/jpg")
-		} else if format == "png" {
-			options.Type = bimg.PNG
-			w.Header().Set("Content-Type", "image/png")
-		} else if format == "webp" {
-			options.Type = bimg.WEBP
-			w.Header().Set("Content-Type", "image/webp")
-		} else if format == "tif" || format == "tiff" {
-			options.Type = bimg.TIFF
-			w.Header().Set("Content-Type", "image/tiff")
-		} else if format == "gif" || format == "pdf" || format == "jp2" {
-			message := fmt.Sprintf(formatMissing, format)
-			http.Error(w, message, 501)
-			return
-		} else {
-			message := fmt.Sprintf(formatError, format)
-			http.Error(w, message, 400)
-			return
-		}
-
-	*/
+	return http.HandlerFunc(f), nil
 }
 
 func main() {
 
+	var host = flag.String("host", "localhost", "Define the hostname")
+	var port = flag.Int("port", 8080, "Define which TCP port to use")
+	var cfg = flag.String("config", ".", "config")
+
 	flag.Parse()
 
-	config, err := iiif.NewConfigFromFile(*config)
-
-	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
-	}
- 
-	derivativeCache, err = cache.NewCacheFromConfig(config.Derivatives.Cache)
+	config, err := iiifconfig.NewConfigFromFile(*cfg)
 
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
 	}
 
-	imageSource, err = source.NewSourceFromConfig(config.Images)	// fix me - the naming is all weird
+	ProfileHandler, err := ProfileHandlerFunc(config)
+
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+
+	InfoHandler, err := InfoHandlerFunc(config)
+
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+
+	ImageHandler, err := ImageHandlerFunc(config)
 
 	if err != nil {
 		log.Fatal(err)
@@ -224,7 +236,7 @@ func main() {
 	router.HandleFunc("/{identifier}/info.json", InfoHandler)
 	router.HandleFunc("/{identifier}/{region}/{size}/{rotation}/{quality}.{format}", ImageHandler)
 
-	expvarHandler := ExpvarHandlerFunc(*host)
+	expvarHandler, _ := ExpvarHandlerFunc(*host)
 	router.HandleFunc("/debug/vars", expvarHandler)
 
 	endpoint := fmt.Sprintf("%s:%d", *host, *port)

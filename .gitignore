@@ -10,3 +10,4 @@ src
 !vendor/src
 bin
 !bin/README.md
+*.json
