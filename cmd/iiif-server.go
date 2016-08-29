@@ -173,21 +173,21 @@ func ImageHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 			return
 		}
 
-		derivative, err := image.Transform(transformation)
+		d, err := image.Transform(transformation)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		go func(k string, v []byte) {
+		go func(k string, im *iiifimage.Image) {
 
-			cache.Set(k, v)
+			cache.Set(k, im.Body())
 
-		}(rel_path, derivative)
+		}(rel_path, d)
 
 		w.Header().Set("Content-Type", "image/jpg") // FIX ME
-		w.Write(body)
+		w.Write(d.Body())
 		return
 	}
 

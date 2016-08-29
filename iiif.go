@@ -9,6 +9,7 @@ type Cache interface {
 }
 
 type Image interface {
+	Identifier() string
 	Body() ([]byte, error)
 	Format() string
 	ContentType() string

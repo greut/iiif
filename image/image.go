@@ -3,6 +3,7 @@ package image
 import (
 	"errors"
 	"fmt"
+	"github.com/thisisaaronland/iiif"
 	"github.com/thisisaaronland/iiif/source"
 	"gopkg.in/h2non/bimg.v1"
 	"math"
@@ -19,6 +20,7 @@ var formatError = "IIIf 2.1 `format` argument is not yet recognized: %#v"
 var formatMissing = "libvips cannot output this format %#v as of yet"
 
 type Image struct {
+	iiif.Image
 	source source.Source
 	id     string
 	bimg   *bimg.Image
@@ -43,6 +45,18 @@ func NewImageFromSource(src source.Source, id string) (*Image, error) {
 	return &im, nil
 }
 
+func (im *Image) Body() []byte {
+	return im.bimg.Image()
+}
+
+func (im *Image) Format() string {
+	return "jpeg" // FIX ME
+}
+
+func (im *Image) ContentType() string {
+	return "image/jpg" // FIX ME
+}
+
 func (im *Image) Identifier() string {
 	return im.id
 }
@@ -57,7 +71,7 @@ func (im *Image) Width() int {
 	return size.Width
 }
 
-func (im *Image) Transform(t *Transformation) ([]byte, error) {
+func (im *Image) Transform(t *Transformation) (*Image, error) {
 
 	size, err := im.bimg.Size()
 
@@ -235,6 +249,11 @@ func (im *Image) Transform(t *Transformation) ([]byte, error) {
 		}
 	}
 
-	bytes := im.bimg.Image()
-	return bytes, nil
+	source, err := source.NewMemorySource(im.Body())
+
+	if err != nil {
+		return nil, err
+	}
+
+	return NewImageFromSource(source, "fixme")
 }
