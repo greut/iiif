@@ -1,6 +1,7 @@
 # iiif
 
 [![Build Status](https://travis-ci.org/greut/iiif.svg?branch=master)](https://travis-ci.org/greut/iiif)
+[![Go Report Card](https://goreportcard.com/badge/github.com/greut/iiif)](https://goreportcard.com/report/github.com/greut/iiif)
 
 A sample and quite dumb web server to serve pictures following the [iiif API](http://iiif.io/).
 
