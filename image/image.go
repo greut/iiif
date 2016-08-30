@@ -26,6 +26,11 @@ type Image struct {
 	bimg   *bimg.Image
 }
 
+type Dimensions struct {
+	iiif.Dimensions
+	imagesize bimg.ImageSize
+}
+
 func NewImageFromSource(src source.Source, id string) (*Image, error) {
 
 	body, err := src.Read(id)
@@ -72,6 +77,21 @@ func (im *Image) ContentType() string {
 
 func (im *Image) Identifier() string {
 	return im.id
+}
+
+func (im *Image) Dimensions() (*Dimensions, error) {
+
+	sz, err := im.bimg.Size()
+
+	if err != nil {
+		return nil, err
+	}
+
+	d := Dimensions{
+		imagesize: sz,
+	}
+
+	return &d, nil
 }
 
 func (im *Image) Height() int {
@@ -264,4 +284,12 @@ func (im *Image) Transform(t *Transformation) error {
 	}
 
 	return nil
+}
+
+func (d *Dimensions) Height() int {
+	return d.imagesize.Height
+}
+
+func (d *Dimensions) Width() int {
+	return d.imagesize.Width
 }

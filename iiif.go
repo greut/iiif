@@ -15,6 +15,11 @@ type Image interface {
 	ContentType() string
 }
 
+type Dimensions interface {
+	Height() int
+	Width() int
+}
+
 type Level interface {
 }
 
