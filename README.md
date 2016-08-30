@@ -85,6 +85,7 @@ test some aspects of the API.
 
 ## TODO
 
+* [Compliance](http://iiif.io/api/image/2.1/compliance/)
 * Caching
 * Sendfile
 * Presentation API
