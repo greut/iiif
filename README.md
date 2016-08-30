@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/greut/iiif.svg?branch=master)](https://travis-ci.org/greut/iiif)
 
-A sample and quite dumb web server to serve pictures following the iiif API.
+A sample and quite dumb web server to serve pictures following the [iiif API](http://iiif.io/).
 
 ## setup
 
@@ -74,8 +74,17 @@ information would be much better linked with a Cache system.
 
 It provides meta-informations about the service. **(incomplete)**
 
+## Viewers
+
+Some viewers are supporting the iiif API quiet out of the box, a good way to
+test some aspects of the API.
+
+* [OpenSeadragon](http://openseadragon.github.io/)
+* [Leaflet-IIIF](https://github.com/mejackreed/Leaflet-IIIF)
+* [IiifViewer](https://github.com/klokantech/iiifviewer) **(not working)**
+
 ## TODO
 
-* Sendfile
 * Caching
+* Sendfile
 * Presentation API

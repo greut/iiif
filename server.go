@@ -176,6 +176,26 @@ func LeafletHandler(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, p)
 }
 
+// IiifViewerHandler responds to the image zooming interface using IIIFViewer
+func IiifViewerHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	identifier := vars["identifier"]
+
+	filename := fmt.Sprintf("%v/%v", *root, identifier)
+	_, err := os.Stat(filename)
+	if err != nil {
+		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
+		http.NotFound(w, r)
+		return
+	}
+
+	p := &struct{ Image string }{Image: identifier}
+
+	t, _ := template.ParseFiles("templates/iiifviewer.html")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	t.Execute(w, p)
+}
+
 // ImageHandler responds to the IIIF 2.1 Image API.
 func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -436,6 +456,7 @@ func main() {
 	router.HandleFunc("/{identifier}/{region}/{size}/{rotation}/{quality}.{format}", ImageHandler)
 	router.HandleFunc("/{identifier}/openseadragon", OpenSeadragonHandler)
 	router.HandleFunc("/{identifier}/leaflet", LeafletHandler)
+	router.HandleFunc("/{identifier}/iiifviewer", IiifViewerHandler)
 	router.HandleFunc("/", IndexHandler)
 
 	log.Println(fmt.Sprintf("Server running on %v:%v", *host, *port))
