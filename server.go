@@ -90,8 +90,9 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal("Cannot create level")
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	header := w.Header()
+	header.Set("Content-Type", "application/json")
+	header.Set("Access-Control-Allow-Origin", "*")
 	w.Write(b)
 }
 
@@ -209,7 +210,6 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 			Top:        0,
 			Left:       0,
 		}
-
 		if region == "square" {
 			if size.Width < size.Height {
 				opts.Top = (size.Height - size.Width) / 2.
@@ -258,10 +258,18 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		// Hack: libvips does strange things here.
+		// * https://github.com/h2non/bimg/issues/60
+		// * https://github.com/h2non/bimg/commit/b7eaa00f104a8eab49eedf49d75b11308df95f7a
+		if opts.Top == 0 && opts.Left == 0 {
+			opts.Top = -1
+		}
+
 		_, err = image.Process(opts)
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		size = bimg.ImageSize{
 			Width:  opts.AreaWidth,
 			Height: opts.AreaHeight,
