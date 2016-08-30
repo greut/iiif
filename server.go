@@ -130,8 +130,9 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal("Cannot create profile")
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	header := w.Header()
+	header.Set("Content-Type", "application/json")
+	header.Set("Access-Control-Allow-Origin", "*")
 	w.Write(b)
 }
 
@@ -363,6 +364,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	// gray
 	// bitonal (not supported)
 	// default
+	// native (IIIF 1.0)
 	if quality == "color" || quality == "default" || quality == "native" {
 		// do nothing.
 	} else if quality == "gray" {
@@ -377,23 +379,30 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	contentType := ""
 	if format == "jpg" || format == "jpeg" {
 		options.Type = bimg.JPEG
-		w.Header().Set("Content-Type", "image/jpg")
+		contentType = "image/jpg"
 	} else if format == "png" {
 		options.Type = bimg.PNG
+		contentType = "image/png"
 		w.Header().Set("Content-Type", "image/png")
 	} else if format == "webp" {
 		options.Type = bimg.WEBP
+		contentType = "image/webp"
 		w.Header().Set("Content-Type", "image/webp")
 	} else if format == "tif" || format == "tiff" {
 		options.Type = bimg.TIFF
-		w.Header().Set("Content-Type", "image/tiff")
+		contentType = "image/tiff"
 	} else if format == "gif" || format == "pdf" || format == "jp2" {
+		contentType = "unsupported"
+	}
+
+	if contentType == "unsupported" {
 		message := fmt.Sprintf(formatMissing, format)
 		http.Error(w, message, 501)
 		return
-	} else {
+	} else if contentType == "" {
 		message := fmt.Sprintf(formatError, format)
 		http.Error(w, message, 400)
 		return
@@ -406,6 +415,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", contentType)
 	_, err = w.Write(image.Image())
 	if err != nil {
 		message := fmt.Sprintf("bimg counldn't write the image: %#v", err.Error())
