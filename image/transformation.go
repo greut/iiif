@@ -1,5 +1,38 @@
 package image
 
+import (
+	"errors"
+	"fmt"
+	"math"
+	"strconv"
+	"strings"
+)
+
+var regionError = "IIIF 2.1 `region` argument is not recognized: %#v"
+var sizeError = "IIIF 2.1 `size` argument is not recognized: %#v"
+var qualityError = "IIIF 2.1 `quality` and `format` arguments were expected: %#v"
+var rotationError = "IIIF 2.1 `rotation` argument is not recognized: %#v"
+var rotationMissing = "libvips cannot rotate angle that isn't a multiple of 90: %#v"
+
+type Crop struct {
+	X      int
+	Y      int
+	Height int
+	Width  int
+}
+
+type Dimensions struct {
+	Height  int
+	Width   int
+	Force   bool
+	Enlarge bool
+}
+
+type Rotation struct {
+	Flip  bool
+	Angle float64
+}
+
 // full
 // square
 // x,y,w,h (in pixels)
@@ -92,4 +125,258 @@ func NewTransformation(region string, size string, rotation string, quality stri
 	}
 
 	return &t, nil
+}
+
+// not sure if this is an instance method or what...
+
+func (t *Transformation) RegionToCrop(im *Image) (*Crop, error) {
+
+	dims, err := im.Dimensions()
+
+	if err != nil {
+		return err
+	}
+
+	width := dims.Width()
+	height := dims.Height()
+
+	if t.Region == "square" {
+
+		var x int
+		var y int
+
+		if width < height {
+			y = (height - width) / 2.
+			x = width
+		} else {
+			x = (width - height) / 2.
+			y = height
+		}
+
+		y = x
+
+		c := Crop{
+			X:      x,
+			Y:      y,
+			Width:  width,
+			Height: height,
+		}
+
+		return &c, nil
+	}
+
+	arr := strings.Split(t.Region, ":")
+
+	if len(arr) == 1 {
+
+		sizes := strings.Split(arr[0], ",")
+
+		if len(sizes) != 4 {
+			message := fmt.Sprintf("Invalid region")
+			return nil, errors.New(message)
+		}
+
+		x, err := strconv.ParseInt(sizes[0], 10, 64)
+
+		if err != nil {
+			return nil, err
+		}
+
+		y, err := strconv.ParseInt(sizes[1], 10, 64)
+
+		if err != nil {
+			return nil, err
+		}
+
+		w, err := strconv.ParseInt(sizes[2], 10, 64)
+
+		if err != nil {
+			return nil, err
+		}
+
+		h, err := strconv.ParseInt(sizes[3], 10, 64)
+
+		if err != nil {
+			return nil, err
+		}
+
+		c := Crop{
+			Width:  int(w),
+			Height: int(h),
+			X:      int(x),
+			Y:      int(y),
+		}
+
+		return &c, nil
+
+	}
+
+	if arr[0] == "pct" {
+
+		sizes := strings.Split(arr[1], ",")
+
+		if len(sizes) != 4 {
+			message := fmt.Sprintf("Invalid region", t.Region)
+			return errors.New(message)
+		}
+
+		x, err := strconv.ParseFloat(sizes[0], 64)
+
+		if err != nil {
+			return nil, err
+		}
+
+		y, err := strconv.ParseFloat(sizes[1], 64)
+
+		if err != nil {
+			return nil, err
+		}
+
+		w, err := strconv.ParseFloat(sizes[2], 64)
+
+		if err != nil {
+			return nil, err
+		}
+
+		h, err := strconv.ParseFloat(sizes[3], 64)
+
+		if err != nil {
+			return nil, err
+		}
+
+		w = int(math.Ceil(float64(width) * w / 100.))
+		h = int(math.Ceil(float64(height) * h / 100.))
+		x = int(math.Ceil(float64(width) * x / 100.))
+		y = int(math.Ceil(float64(height) * y / 100.))
+
+		c := Crop{
+			Width:  w,
+			Height: h,
+			X:      x,
+			Y:      y,
+		}
+
+		return &c, nil
+
+	} else {
+	}
+
+	message := fmt.Sprintf("Unrecognized region")
+	return nil, errors.New(message)
+
+}
+
+func (t *Transformation) SizeToDimensions(im *Image) (interface{}, error) {
+
+	w := 0
+	h := 0
+	force := false
+	enlarge := false
+
+	arr := strings.Split(t.Size, ":")
+
+	if len(arr) == 1 {
+
+		best := strings.HasPrefix(t.Size, "!")
+		sizes := strings.Split(strings.Trim(arr[0], "!"), ",")
+
+		if len(sizes) != 2 {
+			message := fmt.Sprintf(sizeError, t.Size)
+			return nil, errors.New(message)
+		}
+
+		wi, err_w := strconv.ParseInt(sizes[0], 10, 64)
+		h, err_h := strconv.ParseInt(sizes[1], 10, 64)
+
+		if err_w != nil && err_h != nil {
+			message := fmt.Sprintf(sizeError, t.Size)
+			return nil, errors.New(message)
+
+		} else if err_w == nil && err_h == nil {
+
+			w = int(wi)
+			h = int(h)
+
+			if best {
+				enlarge = true
+			} else {
+				force = true
+			}
+
+		} else if err_h != nil {
+			w = int(wi)
+			h = 0
+		} else {
+			w = 0
+			h = int(h)
+		}
+
+		d := Dimensions{
+			Height:  h,
+			Width:   w,
+			Enlarge: enlarge,
+			Force:   force,
+		}
+
+		return &d, nil
+
+	} else if arr[0] == "pct" {
+
+		pct, err := strconv.ParseFloat(arr[1], 64)
+
+		if err != nil {
+			err := errors.New("invalid size")
+			return nil, err
+		}
+
+		dims, err := im.Dimensions()
+
+		if err != nil {
+			return err
+		}
+
+		width := dims.Width()
+		height := dims.Height()
+
+		w = int(math.Ceil(pct / 100 * float64(width)))
+		h = int(math.Ceil(pct / 100 * float64(height)))
+
+	} else {
+
+		message := fmt.Sprintf(sizeError, t.Size)
+		return nil, errors.New(message)
+	}
+	d := Dimensions{
+		Height:  h,
+		Width:   w,
+		Enlarge: enlarge,
+		Force:   force,
+	}
+
+	return &d, nil
+
+}
+
+// PLEASE RENAME ME YEAH
+
+func (t *Transformation) RotationToRotation(im *Image) (*Rotation, error) {
+
+	flip := strings.HasPrefix(t.Rotation, "!")
+	angle, err := strconv.ParseInt(strings.Trim(t.Rotation, "!"), 10, 64)
+
+	if err != nil {
+		message := fmt.Sprintf(rotationError, t.Rotation)
+		return nil, errors.New(message)
+
+	} else if angle%90 != 0 {
+		message := fmt.Sprintf(rotationMissing, t.Rotation)
+		return nil, errors.New(message)
+	}
+
+	r := Rotation{
+		Flip:  flip,
+		Angle: angle,
+	}
+
+	return &r, nil
 }

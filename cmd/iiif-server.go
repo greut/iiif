@@ -91,7 +91,13 @@ func InfoHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 	f := func(w http.ResponseWriter, r *http.Request) {
 
 		vars := mux.Vars(r)
-		id := vars["identifier"]
+
+		id, err := iiifimage.ScrubIdentifier(vars["identifier"])
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		image, err := iiifimage.NewImageFromSource(source, id)
 

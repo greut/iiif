@@ -5,6 +5,7 @@ import (
 	"github.com/thisisaaronland/iiif/cache"
 	"github.com/thisisaaronland/iiif/config"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 )
 
@@ -39,6 +40,12 @@ func (ds *DiskSource) Read(uri string) ([]byte, error) {
 	}
 
 	abs_path := filepath.Join(ds.root, uri)
+
+	_, err = os.Stat(abs_path)
+
+	if os.IsNotExist(err) {
+		return nil, err
+	}
 
 	body, err = ioutil.ReadFile(abs_path)
 

@@ -13,6 +13,7 @@ type Image interface {
 	Body() ([]byte, error)
 	Format() string
 	ContentType() string
+	Dimensions() Dimensions
 }
 
 type Dimensions interface {
