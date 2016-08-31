@@ -91,17 +91,17 @@ func (im *Image) Transform(t *Transformation) error {
 
 	if t.Region != "full" {
 
-		crop, err := t.RegionToCrop(im)
+		rgi, err := t.RegionInstructions(im)
 
 		if err != nil {
 			return err
 		}
 
 		opts = bimg.Options{
-			AreaWidth:  crop.Width,
-			AreaHeight: crop.Height,
-			Left:       crop.X,
-			Top:        crop.Y,
+			AreaWidth:  rgi.Width,
+			AreaHeight: rgi.Height,
+			Left:       rgi.X,
+			Top:        rgi.Y,
 		}
 
 		_, err = im.bimg.Process(opts)
@@ -126,26 +126,26 @@ func (im *Image) Transform(t *Transformation) error {
 
 	if t.Size != "max" && t.Size != "full" {
 
-		dims, err := t.SizeToDimensions(im)
+		si, err := t.SizeInstructions(im)
 
 		if err != nil {
 			return err
 		}
 
-		opts.Height = dims.Height
-		opts.Width = dims.Width
-		opts.Enlarge = dims.Enlarge
-		opts.Force = dims.Force
+		opts.Height = si.Height
+		opts.Width = si.Width
+		opts.Enlarge = si.Enlarge
+		opts.Force = si.Force
 	}
 
-	r, err := t.RotationToRotation(im) // THIS IS A BAD NAME - IT WILL BE CHANGED
+	ri, err := t.RotationInstructions(im)
 
 	if err != nil {
 		return nil
 	}
 
-	opts.Flip = r.Flip
-	opts.Rotate = bimg.Angle(r.Angle % 360)
+	opts.Flip = ri.Flip
+	opts.Rotate = bimg.Angle(ri.Angle % 360)
 
 	if t.Quality == "color" || t.Quality == "default" {
 		// do nothing.

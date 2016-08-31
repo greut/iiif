@@ -14,21 +14,21 @@ var qualityError = "IIIF 2.1 `quality` and `format` arguments were expected: %#v
 var rotationError = "IIIF 2.1 `rotation` argument is not recognized: %#v"
 var rotationMissing = "libvips cannot rotate angle that isn't a multiple of 90: %#v"
 
-type CropTransformation struct {
+type RegionInstruction struct {
 	X      int
 	Y      int
 	Height int
 	Width  int
 }
 
-type SizeTransformation struct {
+type SizeInstruction struct {
 	Height  int
 	Width   int
 	Force   bool
 	Enlarge bool
 }
 
-type RotateTransformation struct {
+type RotationInstruction struct {
 	Flip  bool
 	Angle float64
 }
@@ -127,9 +127,7 @@ func NewTransformation(region string, size string, rotation string, quality stri
 	return &t, nil
 }
 
-// not sure if this is an instance method or what...
-
-func (t *Transformation) RegionToCrop(im *Image) (*CropTransformation, error) {
+func (t *Transformation) RegionInstructions(im *Image) (*RegionInstruction, error) {
 
 	dims, err := im.Dimensions()
 
@@ -155,14 +153,14 @@ func (t *Transformation) RegionToCrop(im *Image) (*CropTransformation, error) {
 
 		y = x
 
-		c := CropTransformation{
+		instruction := RegionInstruction{
 			X:      x,
 			Y:      y,
 			Width:  width,
 			Height: height,
 		}
 
-		return &c, nil
+		return &instruction, nil
 	}
 
 	arr := strings.Split(t.Region, ":")
@@ -200,14 +198,14 @@ func (t *Transformation) RegionToCrop(im *Image) (*CropTransformation, error) {
 			return nil, err
 		}
 
-		c := CropTransformation{
+		instruction := RegionInstruction{
 			Width:  int(w),
 			Height: int(h),
 			X:      int(x),
 			Y:      int(y),
 		}
 
-		return &c, nil
+		return &instruction, nil
 
 	}
 
@@ -249,14 +247,14 @@ func (t *Transformation) RegionToCrop(im *Image) (*CropTransformation, error) {
 		x = int(math.Ceil(float64(width) * x / 100.))
 		y = int(math.Ceil(float64(height) * y / 100.))
 
-		c := CropTransformation{
+		instruction := RegionInstruction{
 			Width:  w,
 			Height: h,
 			X:      x,
 			Y:      y,
 		}
 
-		return &c, nil
+		return &instruction, nil
 
 	} else {
 	}
@@ -266,7 +264,7 @@ func (t *Transformation) RegionToCrop(im *Image) (*CropTransformation, error) {
 
 }
 
-func (t *Transformation) SizeToDimensions(im *Image) (SizeTransformation, error) {
+func (t *Transformation) SizeInstructions(im *Image) (*SizeInstruction, error) {
 
 	w := 0
 	h := 0
@@ -346,20 +344,19 @@ func (t *Transformation) SizeToDimensions(im *Image) (SizeTransformation, error)
 		message := fmt.Sprintf(sizeError, t.Size)
 		return nil, errors.New(message)
 	}
-	d := SizeTransformation{
+
+	instruction := SizeInstruction{
 		Height:  h,
 		Width:   w,
 		Enlarge: enlarge,
 		Force:   force,
 	}
 
-	return &d, nil
+	return &instruction, nil
 
 }
 
-// PLEASE RENAME ME YEAH
-
-func (t *Transformation) RotationToRotation(im *Image) (*RotateTransformation, error) {
+func (t *Transformation) RotationInstructions(im *Image) (*RotationInstruction, error) {
 
 	flip := strings.HasPrefix(t.Rotation, "!")
 	angle, err := strconv.ParseInt(strings.Trim(t.Rotation, "!"), 10, 64)
@@ -373,10 +370,10 @@ func (t *Transformation) RotationToRotation(im *Image) (*RotateTransformation, e
 		return nil, errors.New(message)
 	}
 
-	r := RotationTranformation{
+	instruction := RotationInstruction{
 		Flip:  flip,
 		Angle: angle,
 	}
 
-	return &r, nil
+	return &instruction, nil
 }
