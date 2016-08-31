@@ -5,6 +5,8 @@
 
 A sample and quite dumb web server to serve pictures following the [iiif API](http://iiif.io/).
 
+Image API [Compliance](http://iiif.io/api/image/2.1/compliance/) Level 1 is reached.
+
 ## setup
 
 libvips is required by [bimg](https://github.com/h2non/bimg/).
@@ -86,7 +88,7 @@ test some aspects of the API.
 
 ## TODO
 
-* [Compliance](http://iiif.io/api/image/2.1/compliance/)
+* Compliance Level 2
 * Caching
 * Sendfile
 * Presentation API

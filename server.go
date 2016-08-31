@@ -11,6 +11,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -30,8 +31,8 @@ var formatMissing = "libvips cannot output this format %#v as of yet"
 
 // Level contains the technical properties about the service.
 type Level struct {
-	Context   string   `json:"@profile"`
-	ID        string   `json:"@id"`
+	Context string `json:"@context"`
+	//ID        string   `json:"@id"`
 	Type      string   `json:"@type"` // Optional or iiif:ImageProfile
 	Formats   []string `json:"formats"`
 	Qualities []string `json:"qualities"`
@@ -53,13 +54,13 @@ type ProfileTile struct {
 
 // Profile contains the technical properties about an image.
 type Profile struct {
-	Context  string        `json:"@profile"`
+	Context  string        `json:"@context"`
 	ID       string        `json:"@id"`
 	Type     string        `json:"@type"` // Optional or iiif:Image
 	Protocol string        `json:"protocol"`
 	Width    int           `json:"width"`
 	Height   int           `json:"height"`
-	Profile  []string      `json:"profile"`
+	Profile  []interface{} `json:"profile"`
 	Sizes    []ProfileSize `json:"sizes"`
 	Tiles    []ProfileTile `json:"tiles"`
 }
@@ -75,32 +76,26 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, p)
 }
 
-// ProfileHandler responds to the service technical properties.
-func ProfileHandler(w http.ResponseWriter, r *http.Request) {
-	l := Level{
-		Context:   "http://iiif.io/api/image/2/context.json",
-		ID:        fmt.Sprintf("http://%s/level2.json", r.Host),
-		Type:      "iiif:ImageProfile",
-		Formats:   []string{"jpg", "png", "webp"},
-		Qualities: []string{"gray", "default"},
-		Supports:  []string{},
-	}
+// RedirectHandler responds to the image technical properties.
+func RedirectHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
 
-	b, err := json.Marshal(l)
-	if err != nil {
-		log.Fatal("Cannot create level")
-	}
-	header := w.Header()
-	header.Set("Content-Type", "application/json")
-	header.Set("Access-Control-Allow-Origin", "*")
-	w.Write(b)
+	identifier := vars["identifier"]
+	identifier, _ = url.QueryUnescape(identifier)
+	identifier = strings.Replace(identifier, "../", "", -1)
+
+	http.Redirect(w, r, fmt.Sprintf("http://%s/%s/info.json", r.Host, identifier), 303)
 }
 
 // InfoHandler responds to the image technical properties.
 func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	filename := fmt.Sprintf("%v/%v", *root, vars["identifier"])
+	identifier := vars["identifier"]
+	identifier, _ = url.QueryUnescape(identifier)
+	identifier = strings.Replace(identifier, "../", "", -1)
+
+	filename := fmt.Sprintf("%v/%v", *root, identifier)
 	buffer, err := bimg.Read(filename)
 	if err != nil {
 		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
@@ -116,14 +111,22 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 
 	p := Profile{
 		Context:  "http://iiif.io/api/image/2/context.json",
-		ID:       fmt.Sprintf("http://%s/%s", r.Host, vars["identifier"]),
+		ID:       fmt.Sprintf("http://%s/%s", r.Host, identifier),
 		Type:     "iiif:Image",
 		Protocol: "http://iiif.io/api/image",
 		Width:    size.Width,
 		Height:   size.Height,
-		Profile: []string{
-			fmt.Sprintf("http://%s/level2.json", r.Host),
+		Profile: []interface{}{
+			"http://iiif.io/api/image/2/level1.json",
+			&Level{
+				Context:   "http://iiif.io/api/image/2/context.json",
+				Type:      "iiif:ImageProfile",
+				Formats:   []string{"jpg", "png", "webp"},
+				Qualities: []string{"gray", "default"},
+			},
 		},
+		Sizes: []ProfileSize{},
+		Tiles: []ProfileTile{},
 	}
 
 	b, err := json.Marshal(p)
@@ -131,8 +134,16 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 		log.Fatal("Cannot create profile")
 	}
 	header := w.Header()
-	header.Set("Content-Type", "application/json")
-	header.Set("Access-Control-Allow-Origin", "*")
+
+	accept := r.Header.Get("Accept")
+	if strings.Contains(accept, "application/ld+json") {
+		header.Set("Content-Type", "application/ld+json")
+	} else {
+		header.Set("Content-Type", "application/json")
+	}
+	// https://github.com/IIIF/image-api/pull/45
+	//header.Set("Access-Control-Allow-Origin", "*")
+	header.Set("access-control-allow-origin", "*")
 	w.Write(b)
 }
 
@@ -203,7 +214,16 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	quality := vars["quality"]
 	format := vars["format"]
 
-	filename := fmt.Sprintf("%v/%v", *root, vars["identifier"])
+	identifier, err := url.QueryUnescape(vars["identifier"])
+	identifier = strings.Replace(identifier, "../", "", -1)
+
+	if err != nil {
+		log.Printf("Filename is frob %#v", vars["identifier"])
+		http.NotFound(w, r)
+		return
+	}
+
+	filename := fmt.Sprintf("%v/%v", *root, identifier)
 	buffer, err := bimg.Read(filename)
 	if err != nil {
 		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
@@ -451,12 +471,12 @@ func main() {
 	router.PathPrefix("/assets").Handler(
 		http.StripPrefix("/assets",
 			http.FileServer(http.Dir("bower_components"))))
-	router.HandleFunc("/level2.json", ProfileHandler)
 	router.HandleFunc("/{identifier}/info.json", InfoHandler)
 	router.HandleFunc("/{identifier}/{region}/{size}/{rotation}/{quality}.{format}", ImageHandler)
 	router.HandleFunc("/{identifier}/openseadragon", OpenSeadragonHandler)
 	router.HandleFunc("/{identifier}/leaflet", LeafletHandler)
 	router.HandleFunc("/{identifier}/iiifviewer", IiifViewerHandler)
+	router.HandleFunc("/{identifier}", RedirectHandler)
 	router.HandleFunc("/", IndexHandler)
 
 	log.Println(fmt.Sprintf("Server running on %v:%v", *host, *port))
