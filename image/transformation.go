@@ -14,21 +14,21 @@ var qualityError = "IIIF 2.1 `quality` and `format` arguments were expected: %#v
 var rotationError = "IIIF 2.1 `rotation` argument is not recognized: %#v"
 var rotationMissing = "libvips cannot rotate angle that isn't a multiple of 90: %#v"
 
-type Crop struct {
+type CropTransformation struct {
 	X      int
 	Y      int
 	Height int
 	Width  int
 }
 
-type Dimensions struct {
+type SizeTransformation struct {
 	Height  int
 	Width   int
 	Force   bool
 	Enlarge bool
 }
 
-type Rotation struct {
+type RotateTransformation struct {
 	Flip  bool
 	Angle float64
 }
@@ -129,12 +129,12 @@ func NewTransformation(region string, size string, rotation string, quality stri
 
 // not sure if this is an instance method or what...
 
-func (t *Transformation) RegionToCrop(im *Image) (*Crop, error) {
+func (t *Transformation) RegionToCrop(im *Image) (*CropTransformation, error) {
 
 	dims, err := im.Dimensions()
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	width := dims.Width()
@@ -155,7 +155,7 @@ func (t *Transformation) RegionToCrop(im *Image) (*Crop, error) {
 
 		y = x
 
-		c := Crop{
+		c := CropTransformation{
 			X:      x,
 			Y:      y,
 			Width:  width,
@@ -200,7 +200,7 @@ func (t *Transformation) RegionToCrop(im *Image) (*Crop, error) {
 			return nil, err
 		}
 
-		c := Crop{
+		c := CropTransformation{
 			Width:  int(w),
 			Height: int(h),
 			X:      int(x),
@@ -217,7 +217,7 @@ func (t *Transformation) RegionToCrop(im *Image) (*Crop, error) {
 
 		if len(sizes) != 4 {
 			message := fmt.Sprintf("Invalid region", t.Region)
-			return errors.New(message)
+			return nil, errors.New(message)
 		}
 
 		x, err := strconv.ParseFloat(sizes[0], 64)
@@ -249,7 +249,7 @@ func (t *Transformation) RegionToCrop(im *Image) (*Crop, error) {
 		x = int(math.Ceil(float64(width) * x / 100.))
 		y = int(math.Ceil(float64(height) * y / 100.))
 
-		c := Crop{
+		c := CropTransformation{
 			Width:  w,
 			Height: h,
 			X:      x,
@@ -266,7 +266,7 @@ func (t *Transformation) RegionToCrop(im *Image) (*Crop, error) {
 
 }
 
-func (t *Transformation) SizeToDimensions(im *Image) (interface{}, error) {
+func (t *Transformation) SizeToDimensions(im *Image) (SizeTransformation, error) {
 
 	w := 0
 	h := 0
@@ -346,7 +346,7 @@ func (t *Transformation) SizeToDimensions(im *Image) (interface{}, error) {
 		message := fmt.Sprintf(sizeError, t.Size)
 		return nil, errors.New(message)
 	}
-	d := Dimensions{
+	d := SizeTransformation{
 		Height:  h,
 		Width:   w,
 		Enlarge: enlarge,
@@ -359,7 +359,7 @@ func (t *Transformation) SizeToDimensions(im *Image) (interface{}, error) {
 
 // PLEASE RENAME ME YEAH
 
-func (t *Transformation) RotationToRotation(im *Image) (*Rotation, error) {
+func (t *Transformation) RotationToRotation(im *Image) (*RotateTransformation, error) {
 
 	flip := strings.HasPrefix(t.Rotation, "!")
 	angle, err := strconv.ParseInt(strings.Trim(t.Rotation, "!"), 10, 64)
@@ -373,7 +373,7 @@ func (t *Transformation) RotationToRotation(im *Image) (*Rotation, error) {
 		return nil, errors.New(message)
 	}
 
-	r := Rotation{
+	r := RotationTranformation{
 		Flip:  flip,
 		Angle: angle,
 	}

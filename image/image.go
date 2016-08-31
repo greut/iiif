@@ -87,18 +87,22 @@ func (im *Image) Dimensions() (*Dimensions, error) {
 
 func (im *Image) Transform(t *Transformation) error {
 
+	var opts bimg.Options
+
 	if t.Region != "full" {
 
 		crop, err := t.RegionToCrop(im)
 
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		opts.AreaWidth = crop.Width
-		opts.AreaHeight = crop.Height
-		opts.Left = crop.X
-		opts.Top = crop.Y
+		opts = bimg.Options{
+			AreaWidth:  crop.Width,
+			AreaHeight: crop.Height,
+			Left:       crop.X,
+			Top:        crop.Y,
+		}
 
 		_, err = im.bimg.Process(opts)
 
@@ -115,7 +119,7 @@ func (im *Image) Transform(t *Transformation) error {
 		return err
 	}
 
-	opts := bimg.Options{
+	opts = bimg.Options{
 		Width:  dims.Width(),  // opts.AreaWidth,
 		Height: dims.Height(), // opts.AreaHeight,
 	}
@@ -162,6 +166,7 @@ func (im *Image) Transform(t *Transformation) error {
 		return err
 	}
 
+	return nil
 }
 
 func (d *Dimensions) Height() int {
