@@ -133,10 +133,32 @@ func (t *Transformation) ToURI(id string) string {
 		id,
 		t.Region,
 		t.Size,
+		t.Rotation,
 		t.Quality,
 	}
 
 	return fmt.Sprintf("%s.%s", strings.Join(nodes, "/"), t.Format)
+}
+
+func (t *Transformation) HasTransformation() bool {
+
+	if t.Region != "full" {
+		return true
+	}
+
+	if t.Size != "full" {
+		return true
+	}
+
+	if t.Rotation != "0" {
+		return true
+	}
+
+	if t.Quality != "default" {
+		return true
+	}
+
+	return false
 }
 
 func (t *Transformation) RegionInstructions(im Image) (*RegionInstruction, error) {

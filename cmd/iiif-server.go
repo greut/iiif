@@ -170,18 +170,26 @@ func ImageHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 			return
 		}
 
-		err = image.Transform(transformation)
+		// something something something maybe sendfile something something
+		// (20160901/thisisaaronland)
+		//
+		// log.Printf("%s %t\n", id, transformation.HasTransformation())
 
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+		if transformation.HasTransformation() {
+
+			err = image.Transform(transformation)
+
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			go func(k string, im iiifimage.Image) {
+
+				cache.Set(k, im.Body())
+
+			}(rel_path, image)
 		}
-
-		go func(k string, im iiifimage.Image) {
-
-			cache.Set(k, im.Body())
-
-		}(rel_path, image)
 
 		w.Header().Set("Content-Type", image.ContentType())
 		w.Write(image.Body())

@@ -1,21 +1,39 @@
 # iiif
 
-A sample and quite dumb web server to serve pictures following the iiif API.
+This is a fork @greut 's [iiif](https://github.com/greut/iiif) package that moves most of the processing logic in to discrete Go packages and defines source, derivative and graphics details in a JSON config file. There is also an additional caching layer for both source images and derivatives.
+
+_It mostly works but it still a work in progress._
 
 ## setup
 
-libvips is required by [bimg](https://github.com/h2non/bimg/).
+libvips is required by [bimg](https://github.com/h2non/bimg/). There is a detailed [setup script](ubuntu/setup.sh) available for Ubuntu.
 
 ```
-$ go build
-$ ./iiif --help
-
-$ ./iiif --host 0.0.0.0 --port 8080 --root images --cache cache
-
-$ go run server.go --port 8080 --root images --cache cache
+$> make bin
+$> bin/iiif-server -config config.json
+2016/09/01 15:45:07 Serving 127.0.0.1:8080 with pid 12075
 ```
 
-_`--cache` is where individual image tiles (or crops) are stored rather than the source images._
+## config files
+
+There is a [sample config file](config.json.example) included with this repo.
+
+```
+{
+    "graphics": {
+	"source": { "name": "VIPS" }
+    },
+    "images": {
+	"source": { "name": "Disk", "path": "/path/to/images" },
+	"cache": { "name": "Memory", "ttl": 300, "limit": 100 }
+    },
+    "derivatives": {
+	"cache": { "name": "Disk", "path": "/path/to/derivatives-cache" }
+    }
+}
+```
+
+_Detailed documentation to follow._
 
 ## iiif image API 2.1
 
@@ -73,9 +91,3 @@ information would be much better linked with a Cache system.
 ### [Level2 profile](http://iiif.io/api/image/2.1/#profile-description)
 
 It provides meta-informations about the service. **(incomplete)**
-
-## TODO
-
-* Sendfile
-* Caching
-* Presentation API
