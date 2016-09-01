@@ -14,11 +14,11 @@ $> make bin
 
 ## Example
 
-### Inn your own code
+### In your own code
 
 _Please write me._
 
-### Ass an HTTP pony
+### As an HTTP pony
 
 Let's assume you have a copy of [this image](https://collection.cooperhewitt.org/objects/18382391/) in your `/path/to/images` source directory.
 
