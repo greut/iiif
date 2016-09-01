@@ -3,29 +3,26 @@ package image
 // https://github.com/h2non/bimg
 // https://github.com/jcupitt/libvips
 
-// PLEASE TO RENAME ALL OF THE TYPES AND NewImageFromSource
-
 import (
 	"errors"
 	"fmt"
-	"github.com/thisisaaronland/iiif"
 	"github.com/thisisaaronland/iiif/source"
 	"gopkg.in/h2non/bimg.v1"
 )
 
-type Image struct {
-	iiif.Image
+type VIPSImage struct {
+	Image
 	source source.Source
 	id     string
 	bimg   *bimg.Image
 }
 
-type Dimensions struct {
-	iiif.Dimensions
+type VIPSDimensions struct {
+	Dimensions
 	imagesize bimg.ImageSize
 }
 
-func NewImageFromSource(src source.Source, id string) (*Image, error) {
+func NewVIPSImageFromSource(src source.Source, id string) (*VIPSImage, error) {
 
 	body, err := src.Read(id)
 
@@ -35,7 +32,7 @@ func NewImageFromSource(src source.Source, id string) (*Image, error) {
 
 	bimg := bimg.NewImage(body)
 
-	im := Image{
+	im := VIPSImage{
 		source: src,
 		id:     id,
 		bimg:   bimg,
@@ -44,15 +41,15 @@ func NewImageFromSource(src source.Source, id string) (*Image, error) {
 	return &im, nil
 }
 
-func (im *Image) Body() []byte {
+func (im *VIPSImage) Body() []byte {
 	return im.bimg.Image()
 }
 
-func (im *Image) Format() string {
+func (im *VIPSImage) Format() string {
 	return im.bimg.Type()
 }
 
-func (im *Image) ContentType() string {
+func (im *VIPSImage) ContentType() string {
 
 	format := im.Format()
 
@@ -69,11 +66,11 @@ func (im *Image) ContentType() string {
 	}
 }
 
-func (im *Image) Identifier() string {
+func (im *VIPSImage) Identifier() string {
 	return im.id
 }
 
-func (im *Image) Dimensions() (*Dimensions, error) {
+func (im *VIPSImage) Dimensions() (Dimensions, error) {
 
 	sz, err := im.bimg.Size()
 
@@ -81,14 +78,14 @@ func (im *Image) Dimensions() (*Dimensions, error) {
 		return nil, err
 	}
 
-	d := Dimensions{
+	d := VIPSDimensions{
 		imagesize: sz,
 	}
 
 	return &d, nil
 }
 
-func (im *Image) Transform(t *Transformation) error {
+func (im *VIPSImage) Transform(t *Transformation) error {
 
 	var opts bimg.Options
 
@@ -172,10 +169,10 @@ func (im *Image) Transform(t *Transformation) error {
 	return nil
 }
 
-func (d *Dimensions) Height() int {
+func (d *VIPSDimensions) Height() int {
 	return d.imagesize.Height
 }
 
-func (d *Dimensions) Width() int {
+func (d *VIPSDimensions) Width() int {
 	return d.imagesize.Width
 }

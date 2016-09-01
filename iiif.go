@@ -8,19 +8,6 @@ type Cache interface {
 	Unset(string) error
 }
 
-type Image interface {
-	Identifier() string
-	Body() ([]byte, error)
-	Format() string
-	ContentType() string
-	Dimensions() Dimensions
-}
-
-type Dimensions interface {
-	Height() int
-	Width() int
-}
-
 type Level interface {
 }
 

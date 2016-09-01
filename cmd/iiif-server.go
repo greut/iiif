@@ -82,11 +82,13 @@ func ProfileHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 
 func InfoHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 
-	source, err := iiifsource.NewSourceFromConfig(config.Images)
+	/*
+		source, err := iiifsource.NewSourceFromConfig(config.Images)
 
-	if err != nil {
-		return nil, err
-	}
+		if err != nil {
+			return nil, err
+		}
+	*/
 
 	f := func(w http.ResponseWriter, r *http.Request) {
 
@@ -99,7 +101,7 @@ func InfoHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 			return
 		}
 
-		image, err := iiifimage.NewImageFromSource(source, id)
+		image, err := iiifimage.NewImageFromConfig(config, id)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -131,11 +133,13 @@ func InfoHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 
 func ImageHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 
-	source, err := iiifsource.NewSourceFromConfig(config.Images)
+	/*
+		source, err := iiifsource.NewSourceFromConfig(config.Images)
 
-	if err != nil {
-		return nil, err
-	}
+		if err != nil {
+			return nil, err
+		}
+	*/
 
 	cache, err := iiifcache.NewCacheFromConfig(config.Derivatives.Cache)
 
@@ -152,7 +156,7 @@ func ImageHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 		if err == nil {
 
 			source, _ := iiifsource.NewMemorySource(body)
-			image, _ := iiifimage.NewImageFromSource(source, "cache")
+			image, _ := iiifimage.NewImageFromConfigWithSource(config, source, "cache")
 
 			w.Header().Set("Content-Type", image.ContentType())
 			w.Write(image.Body())
@@ -175,7 +179,7 @@ func ImageHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 			return
 		}
 
-		image, err := iiifimage.NewImageFromSource(source, id)
+		image, err := iiifimage.NewImageFromConfig(config, id)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -189,7 +193,7 @@ func ImageHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 			return
 		}
 
-		go func(k string, im *iiifimage.Image) {
+		go func(k string, im iiifimage.Image) {
 
 			cache.Set(k, im.Body())
 

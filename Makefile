@@ -36,6 +36,7 @@ vendor: deps
 
 fmt:
 	go fmt *.go
+	go fmt cmd/*.go
 	go fmt cache/*.go
 	go fmt image/*.go
 	go fmt level/*.go

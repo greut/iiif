@@ -6,6 +6,7 @@ import (
 )
 
 type Config struct {
+        Graphics    GraphicsConfig    `json::graphics"`
 	Images      ImagesConfig      `json:"images"`
 	Derivatives DerivativesConfig `json:"derivatives"`
 }
@@ -19,9 +20,13 @@ type DerivativesConfig struct {
 	Cache CacheConfig `json:"cache"`
 }
 
+type GraphicsConfig struct {
+	Source SourceConfig `json:"cache"`
+}
+
 type SourceConfig struct {
 	Name string `json:"name"`
-	Path string `json:"path"`
+	Path string `json:"path,omitempty"`
 }
 
 type CacheConfig struct {

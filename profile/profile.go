@@ -17,7 +17,7 @@ type Profile struct {
 	//	Tiles    []string `json:"tiles"` // Optional
 }
 
-func NewProfile(host string, im *image.Image) (*Profile, error) {
+func NewProfile(host string, im image.Image) (*Profile, error) {
 
 	dims, err := im.Dimensions()
 

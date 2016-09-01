@@ -127,7 +127,19 @@ func NewTransformation(region string, size string, rotation string, quality stri
 	return &t, nil
 }
 
-func (t *Transformation) RegionInstructions(im *Image) (*RegionInstruction, error) {
+func (t *Transformation) ToURI(id string) string {
+
+	nodes := []string{
+		id,
+		t.Region,
+		t.Size,
+		t.Quality,
+	}
+
+	return fmt.Sprintf("%s.%s", strings.Join(nodes, "/"), t.Format)
+}
+
+func (t *Transformation) RegionInstructions(im Image) (*RegionInstruction, error) {
 
 	dims, err := im.Dimensions()
 
@@ -264,7 +276,7 @@ func (t *Transformation) RegionInstructions(im *Image) (*RegionInstruction, erro
 
 }
 
-func (t *Transformation) SizeInstructions(im *Image) (*SizeInstruction, error) {
+func (t *Transformation) SizeInstructions(im Image) (*SizeInstruction, error) {
 
 	w := 0
 	h := 0
@@ -356,7 +368,7 @@ func (t *Transformation) SizeInstructions(im *Image) (*SizeInstruction, error) {
 
 }
 
-func (t *Transformation) RotationInstructions(im *Image) (*RotationInstruction, error) {
+func (t *Transformation) RotationInstructions(im Image) (*RotationInstruction, error) {
 
 	flip := strings.HasPrefix(t.Rotation, "!")
 	angle, err := strconv.ParseInt(strings.Trim(t.Rotation, "!"), 10, 64)
