@@ -1,6 +1,6 @@
 # iiif
 
-This is a fork `greut`'s [iiif](https://github.com/greut/iiif) package that moves most of the processing logic in to discrete Go packages and defines source, derivative and graphics details in a JSON config file. There is also an additional caching layer for both source images and derivatives.
+This is a fork `greut`'s [iiif](https://github.com/greut/iiif) package that moves all of the processing logic in to discrete Go packages and defines source, derivative and graphics details in a JSON config file. There is also an additional caching layer for both source images and derivatives.
 
 _It mostly works but it still a work in progress._
 
