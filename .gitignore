@@ -2,7 +2,7 @@ iiif
 images/
 pkg/
 src/
-
+config.json
 server
 init.sh
 *~
