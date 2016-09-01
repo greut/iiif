@@ -4,17 +4,29 @@ This is a fork @greut 's [iiif](https://github.com/greut/iiif) package that move
 
 _It mostly works but it still a work in progress._
 
-## setup
+## Setup
 
 libvips is required by [bimg](https://github.com/h2non/bimg/). There is a detailed [setup script](ubuntu/setup.sh) available for Ubuntu.
 
 ```
 $> make bin
-$> bin/iiif-server -config config.json
-2016/09/01 15:45:07 Serving 127.0.0.1:8080 with pid 12075
 ```
 
-## config files
+## Example
+
+Let's assume you have a copy of [this image](https://collection.cooperhewitt.org/objects/18382391/) in your `/path/to/images` source directory.
+
+```
+$> bin/iiif-server -config config.json
+2016/09/01 15:45:07 Serving 127.0.0.1:8080 with pid 12075
+
+curl -s localhost:8080/184512_5f7f47e5b3c66207_x.jpg/full/full/0/default.jpg > /vagrant/full.jpg
+curl -s localhost:8080/184512_5f7f47e5b3c66207_x.jpg/125,15,200,200/full/0/default.jpg > /vagrant/small.jpg
+curl -s localhost:8080/184512_5f7f47e5b3c66207_x.jpg/pct:41.6,7.5,40,70/full/0/default.jpg > /vagrant/small.jpg
+curl -s localhost:8080/184512_5f7f47e5b3c66207_x.jpg/full/full/270/default.png > /vagrant/rotate.jpg
+```
+
+## Config files
 
 There is a [sample config file](config.json.example) included with this repo.
 
@@ -35,7 +47,7 @@ There is a [sample config file](config.json.example) included with this repo.
 
 _Detailed documentation to follow._
 
-## iiif image API 2.1
+## IIIF image API 2.1
 
 The API specifications can be found on [iiif.io](http://iiif.io/api/image/2.1/index.html).
 
