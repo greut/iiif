@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"github.com/thisisaaronland/iiif"
 	"github.com/thisisaaronland/iiif/config"
 	"io/ioutil"
 	"os"
@@ -10,7 +9,7 @@ import (
 )
 
 type DiskCache struct {
-	iiif.Cache
+	Cache
 	root string
 }
 

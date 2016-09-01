@@ -1,7 +1,6 @@
 package source
 
 import (
-	"github.com/thisisaaronland/iiif"
 	"github.com/thisisaaronland/iiif/cache"
 	"github.com/thisisaaronland/iiif/config"
 	"io/ioutil"
@@ -12,7 +11,7 @@ import (
 type DiskSource struct {
 	Source
 	root  string
-	cache iiif.Cache
+	cache cache.Cache
 }
 
 func NewDiskSource(cfg config.ImagesConfig) (*DiskSource, error) {

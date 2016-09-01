@@ -2,13 +2,12 @@ package cache
 
 import (
 	"github.com/allegro/bigcache"
-	"github.com/thisisaaronland/iiif"
 	"github.com/thisisaaronland/iiif/config"
 	"time"
 )
 
 type MemoryCache struct {
-	iiif.Cache
+	Cache
 	cache *bigcache.BigCache
 }
 

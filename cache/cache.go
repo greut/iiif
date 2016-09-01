@@ -1,11 +1,16 @@
 package cache
 
 import (
-	"github.com/thisisaaronland/iiif"
 	"github.com/thisisaaronland/iiif/config"
 )
 
-func NewCacheFromConfig(cfg config.CacheConfig) (iiif.Cache, error) {
+type Cache interface {
+	Get(string) ([]byte, error)
+	Set(string, []byte) error
+	Unset(string) error
+}
+
+func NewCacheFromConfig(cfg config.CacheConfig) (Cache, error) {
 
 	if cfg.Name == "Disk" {
 		cache, err := NewDiskCache(cfg)

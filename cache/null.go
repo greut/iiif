@@ -2,12 +2,11 @@ package cache
 
 import (
 	"errors"
-	"github.com/thisisaaronland/iiif"
 	"github.com/thisisaaronland/iiif/config"
 )
 
 type NullCache struct {
-	iiif.Cache
+	Cache
 }
 
 func NewNullCache(cfg config.CacheConfig) (*NullCache, error) {
