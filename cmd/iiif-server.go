@@ -82,14 +82,6 @@ func ProfileHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 
 func InfoHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 
-	/*
-		source, err := iiifsource.NewSourceFromConfig(config.Images)
-
-		if err != nil {
-			return nil, err
-		}
-	*/
-
 	f := func(w http.ResponseWriter, r *http.Request) {
 
 		vars := mux.Vars(r)
@@ -132,14 +124,6 @@ func InfoHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
 }
 
 func ImageHandlerFunc(config *iiifconfig.Config) (http.HandlerFunc, error) {
-
-	/*
-		source, err := iiifsource.NewSourceFromConfig(config.Images)
-
-		if err != nil {
-			return nil, err
-		}
-	*/
 
 	cache, err := iiifcache.NewCacheFromConfig(config.Derivatives.Cache)
 
@@ -216,6 +200,16 @@ func main() {
 	flag.Parse()
 
 	config, err := iiifconfig.NewConfigFromFile(*cfg)
+
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+
+	// See this - we're just going to make sure we have a valid source
+	// before we start serving images (20160901/thisisaaronland)
+
+	_, err = iiifsource.NewSourceFromConfig(config.Images)
 
 	if err != nil {
 		log.Fatal(err)
