@@ -8,7 +8,7 @@ _It mostly works but it still a work in progress._
 
 Currently all the image processing is handled by the [bimg](https://github.com/h2non/bimg/) Go package which requires the [libvips](http://www.vips.ecs.soton.ac.uk/index.php?title=VIPS) C library be installed. Eventually there will be pure-Go alternatives for wrangling images.
 
-There is a detailed [setup script](ubuntu/setup.sh) available for Ubuntu.
+There is a detailed [setup script](ubuntu/setup.sh) available for Ubuntu. Once you have thingss like`Go` and `libvips` installed just type:
 
 ```
 $> make bin
