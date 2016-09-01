@@ -59,7 +59,11 @@ _More better documentation to follow but in the meantime..._
 
 Details about how images should be processed.
 
-#### source.name
+#### source
+
+Where to find source images.
+
+##### name
 
 Details about what will do the actual image processing.
 
