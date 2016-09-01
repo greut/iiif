@@ -20,10 +20,10 @@ Let's assume you have a copy of [this image](https://collection.cooperhewitt.org
 $> bin/iiif-server -config config.json
 2016/09/01 15:45:07 Serving 127.0.0.1:8080 with pid 12075
 
-curl -s localhost:8080/184512_5f7f47e5b3c66207_x.jpg/full/full/0/default.jpg > /vagrant/full.jpg
-curl -s localhost:8080/184512_5f7f47e5b3c66207_x.jpg/125,15,200,200/full/0/default.jpg > /vagrant/small.jpg
-curl -s localhost:8080/184512_5f7f47e5b3c66207_x.jpg/pct:41.6,7.5,40,70/full/0/default.jpg > /vagrant/small.jpg
-curl -s localhost:8080/184512_5f7f47e5b3c66207_x.jpg/full/full/270/default.png > /vagrant/rotate.jpg
+curl -s localhost:8080/184512_5f7f47e5b3c66207_x.jpg/full/full/0/default.jpg > /path/to/full.jpg
+curl -s localhost:8080/184512_5f7f47e5b3c66207_x.jpg/125,15,200,200/full/0/default.jpg > /path/to/small.jpg
+curl -s localhost:8080/184512_5f7f47e5b3c66207_x.jpg/pct:41.6,7.5,40,70/full/0/default.jpg > /path/to/crop.jpg
+curl -s localhost:8080/184512_5f7f47e5b3c66207_x.jpg/full/full/270/default.png > /path/to/rotate.jpg
 ```
 
 ## Config files
@@ -46,6 +46,86 @@ There is a [sample config file](config.json.example) included with this repo.
 ```
 
 _Detailed documentation to follow._
+
+### graphics
+
+Details about how images should be processed.
+
+#### source.name
+
+Details about what will do the actual image processing.
+
+* VIPS - currently there is only VIPS which is aich is an interface to the [() librarys
+
+### images
+
+Details about source images.
+
+#### source
+
+Where to find source images.
+
+##### name
+
+Possible cache sources for source images are:
+
+* Disk - A locally available filesystem.
+
+_Planned future source providers include reading images via S3 or an OEmbed endpoint._ 
+
+#####  path
+
+The path to a valid directory to find source images.
+
+#### cache
+
+Caching options for source images.
+
+##### name
+
+Possible cache sources for source images are:
+
+* Disk  - Cache images to a locally available filesystem. Until it is possible to read source images from a remote location it's not clear why you would ever do this but I guess that's your business...
+
+* Memory - Cache images in memory.
+
+* Null – Because you must define a caching layer this is here to satify the requirements without actually caching anything, anywhere.
+
+##### ttl
+
+This is only valid for `Memory` caches and indicates the maximum number of seconds an image should live in cache.
+
+##### limit
+
+This is only valid for `Memory` caches and indicates the maximum number of megabytes the cache should hold at any one time.
+
+### derivatives
+
+Details about derivative images.
+
+#### cache
+
+Caching options for derivative images.
+
+##### name
+
+Possible cache sources for derivative images are:
+
+* Disk - Tache derivatives to a locally available filesystem.
+
+* Memory - Cache images in memory.
+
+* Null – Because you must define a caching layer this is here to satify the requirements without actually caching anything, anywhere.
+
+_Planned future caching providers include writing derivatives to S3._
+
+##### ttl
+
+This is only valid for `Memory` caches and indicates the maximum number of seconds an image should live in cache.
+
+##### limit
+
+This is only valid for `Memory` caches and indicates the maximum number of megabytes the cache should hold at any one time.
 
 ## IIIF image API 2.1
 
