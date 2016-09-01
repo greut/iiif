@@ -1,6 +1,6 @@
 # iiif
 
-This is a fork @greut 's [iiif](https://github.com/greut/iiif) package that moves most of the processing logic in to discrete Go packages and defines source, derivative and graphics details in a JSON config file. There is also an additional caching layer for both source images and derivatives.
+This is a fork `greut`'s [iiif](https://github.com/greut/iiif) package that moves most of the processing logic in to discrete Go packages and defines source, derivative and graphics details in a JSON config file. There is also an additional caching layer for both source images and derivatives.
 
 _It mostly works but it still a work in progress._
 
@@ -13,6 +13,12 @@ $> make bin
 ```
 
 ## Example
+
+### Inn your own code
+
+_Please write me._
+
+### Ass an HTTP pony
 
 Let's assume you have a copy of [this image](https://collection.cooperhewitt.org/objects/18382391/) in your `/path/to/images` source directory.
 
@@ -55,7 +61,7 @@ Details about how images should be processed.
 
 Details about what will do the actual image processing.
 
-* VIPS - currently there is only VIPS which is aich is an interface to the [libvips](http://www.vips.ecs.soton.ac.uk/index.php?title=VIPS) libraryy.
+* VIPS - currently there is only VIPS which is which is an interface to the [libvips](http://www.vips.ecs.soton.ac.uk/index.php?title=VIPS) library.
 
 ### images
 
