@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -20,7 +21,9 @@ import (
 var port = flag.String("port", "80", "Define which TCP port to use")
 var root = flag.String("root", ".", "Define root directory")
 var host = flag.String("host", "0.0.0.0", "Define the hostname")
+var templates = "templates"
 
+var openError = "libvips cannot open this file: %#v"
 var qualityError = "IIIF 2.1 `quality` and `format` arguments were expected: %#v"
 var regionError = "IIIF 2.1 `region` argument is not recognized: %#v"
 var sizeError = "IIIF 2.1 `size` argument is not recognized: %#v"
@@ -61,8 +64,8 @@ type Profile struct {
 	Width    int           `json:"width"`
 	Height   int           `json:"height"`
 	Profile  []interface{} `json:"profile"`
-	Sizes    []ProfileSize `json:"sizes"`
-	Tiles    []ProfileTile `json:"tiles"`
+	//Sizes    []ProfileSize `json:"sizes"`
+	//Tiles    []ProfileTile `json:"tiles"`
 }
 
 // IndexHandler responds to the service homepage.
@@ -81,7 +84,13 @@ func RedirectHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	identifier := vars["identifier"]
-	identifier, _ = url.QueryUnescape(identifier)
+	identifier, err := url.QueryUnescape(identifier)
+	if err != nil {
+		log.Printf("Filename is frob %#v", identifier)
+		http.NotFound(w, r)
+		return
+	}
+
 	identifier = strings.Replace(identifier, "../", "", -1)
 
 	http.Redirect(w, r, fmt.Sprintf("http://%s/%s/info.json", r.Host, identifier), 303)
@@ -92,10 +101,16 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	identifier := vars["identifier"]
-	identifier, _ = url.QueryUnescape(identifier)
+	identifier, err := url.QueryUnescape(identifier)
+	if err != nil {
+		log.Printf("Filename is frob %#v", identifier)
+		http.NotFound(w, r)
+		return
+	}
+
 	identifier = strings.Replace(identifier, "../", "", -1)
 
-	filename := fmt.Sprintf("%v/%v", *root, identifier)
+	filename := filepath.Join(*root, identifier)
 	buffer, err := bimg.Read(filename)
 	if err != nil {
 		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
@@ -106,7 +121,9 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	image := bimg.NewImage(buffer)
 	size, err := image.Size()
 	if err != nil {
-		log.Fatal(err)
+		message := fmt.Sprintf(openError, identifier)
+		http.Error(w, message, 501)
+		return
 	}
 
 	p := Profile{
@@ -117,7 +134,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 		Width:    size.Width,
 		Height:   size.Height,
 		Profile: []interface{}{
-			"http://iiif.io/api/image/2/level1.json",
+			"http://iiif.io/api/image/2/level2.json",
 			&Level{
 				Context:   "http://iiif.io/api/image/2/context.json",
 				Type:      "iiif:ImageProfile",
@@ -125,8 +142,8 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 				Qualities: []string{"gray", "default"},
 			},
 		},
-		Sizes: []ProfileSize{},
-		Tiles: []ProfileTile{},
+		//Sizes: []ProfileSize{},
+		//Tiles: []ProfileTile{},
 	}
 
 	b, err := json.Marshal(p)
@@ -141,19 +158,26 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		header.Set("Content-Type", "application/json")
 	}
-	// https://github.com/IIIF/image-api/pull/45
-	//header.Set("Access-Control-Allow-Origin", "*")
 	header.Set("access-control-allow-origin", "*")
 	w.Write(b)
 }
 
-// OpenSeadragonHandler responds to the image zooming interface using OSD
-func OpenSeadragonHandler(w http.ResponseWriter, r *http.Request) {
+// ViewerHandler responds with the existing templates.
+func ViewerHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+	viewer := vars["viewer"]
 	identifier := vars["identifier"]
 
-	filename := fmt.Sprintf("%v/%v", *root, identifier)
-	_, err := os.Stat(filename)
+	identifier, err := url.QueryUnescape(identifier)
+	if err != nil {
+		log.Printf("Filename is frob %#v", identifier)
+		http.NotFound(w, r)
+		return
+	}
+	identifier = strings.Replace(identifier, "../", "", -1)
+
+	filename := filepath.Join(*root, identifier)
+	_, err = os.Stat(filename)
 	if err != nil {
 		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
 		http.NotFound(w, r)
@@ -162,47 +186,13 @@ func OpenSeadragonHandler(w http.ResponseWriter, r *http.Request) {
 
 	p := &struct{ Image string }{Image: identifier}
 
-	t, _ := template.ParseFiles("templates/openseadragon.html")
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	t.Execute(w, p)
-}
-
-// LeafletHandler responds to the image zooming interface using Leaflet
-func LeafletHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	identifier := vars["identifier"]
-
-	filename := fmt.Sprintf("%v/%v", *root, identifier)
-	_, err := os.Stat(filename)
+	tpl := filepath.Join(templates, viewer)
+	t, err := template.ParseFiles(tpl)
 	if err != nil {
-		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
-		http.NotFound(w, r)
+		log.Printf("Template not found. %#v", err.Error())
 		return
 	}
 
-	p := &struct{ Image string }{Image: identifier}
-
-	t, _ := template.ParseFiles("templates/leaflet.html")
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	t.Execute(w, p)
-}
-
-// IiifViewerHandler responds to the image zooming interface using IIIFViewer
-func IiifViewerHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	identifier := vars["identifier"]
-
-	filename := fmt.Sprintf("%v/%v", *root, identifier)
-	_, err := os.Stat(filename)
-	if err != nil {
-		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
-		http.NotFound(w, r)
-		return
-	}
-
-	p := &struct{ Image string }{Image: identifier}
-
-	t, _ := template.ParseFiles("templates/iiifviewer.html")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	t.Execute(w, p)
 }
@@ -215,15 +205,14 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	format := vars["format"]
 
 	identifier, err := url.QueryUnescape(vars["identifier"])
-	identifier = strings.Replace(identifier, "../", "", -1)
-
 	if err != nil {
 		log.Printf("Filename is frob %#v", vars["identifier"])
 		http.NotFound(w, r)
 		return
 	}
 
-	filename := fmt.Sprintf("%v/%v", *root, identifier)
+	identifier = strings.Replace(identifier, "../", "", -1)
+	filename := filepath.Join(*root, identifier)
 	buffer, err := bimg.Read(filename)
 	if err != nil {
 		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
@@ -234,7 +223,9 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	image := bimg.NewImage(buffer)
 	size, err := image.Size()
 	if err != nil {
-		log.Fatal(err)
+		message := fmt.Sprintf(openError, err.Error())
+		http.Error(w, message, 501)
+		return
 	}
 
 	// Region
@@ -473,9 +464,7 @@ func main() {
 			http.FileServer(http.Dir("bower_components"))))
 	router.HandleFunc("/{identifier}/info.json", InfoHandler)
 	router.HandleFunc("/{identifier}/{region}/{size}/{rotation}/{quality}.{format}", ImageHandler)
-	router.HandleFunc("/{identifier}/openseadragon", OpenSeadragonHandler)
-	router.HandleFunc("/{identifier}/leaflet", LeafletHandler)
-	router.HandleFunc("/{identifier}/iiifviewer", IiifViewerHandler)
+	router.HandleFunc("/{identifier}/{viewer}", ViewerHandler)
 	router.HandleFunc("/{identifier}", RedirectHandler)
 	router.HandleFunc("/", IndexHandler)
 

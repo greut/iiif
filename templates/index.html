@@ -9,16 +9,18 @@
         {{ range $image := .Files }}
         <h2>{{ $image.Name }}</h2>
         <p>Zoomable interfaces:
-            <a href="/{{ $image.Name }}/openseadragon">OpenSeadragon</a>,
-            <a href="/{{ $image.Name }}/leaflet">Leaflet-IIIF</a>,
-            <a href="/{{ $image.Name }}/iiifviewer">IiifViewer</a>.
+            <a href="/{{ $image.Name }}/openseadragon.html">OpenSeadragon</a>,
+            <a href="/{{ $image.Name }}/leaflet.html">Leaflet-IIIF</a>,
+            <a href="/{{ $image.Name }}/iiifviewer.html">IiifViewer</a>.
         </p>
         <h3><tt>/{{ $image.Name }}/<strong>info.json</strong></tt></h3>
         <iframe src="/{{ $image.Name }}/info.json" width="100%" height="250px"></iframe>
-        <h3><tt>/full/max/0/default</tt></h3>
-        <img src="/{{ $image.Name }}/full/max/0/default.jpg">
+        <h3><tt>/{{ $image.Name }}/square/500,/0/default</tt></h3>
+        <img src="/{{ $image.Name }}/square/500,/0/default.jpg">
         <!--
         <h2>Region</h2>
+        <h3><tt>/<strong>full</strong>/0/default</tt></h3>
+        <img src="/{{ $image.Name }}/full/max/0/default.jpg">
         <h3><tt>/<strong>square</strong>/max/0/default</tt></h3>
         <img src="/{{ $image.Name }}/square/full/0/default.jpg">
         <h3><tt>/<strong>100,100,500,500</strong>/max/0/default</tt></h3>

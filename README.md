@@ -1,11 +1,11 @@
-# iiif
+# IIIF
 
 [![Build Status](https://travis-ci.org/greut/iiif.svg?branch=master)](https://travis-ci.org/greut/iiif)
 [![Go Report Card](https://goreportcard.com/badge/github.com/greut/iiif)](https://goreportcard.com/report/github.com/greut/iiif)
 
 A sample and quite dumb web server to serve pictures following the [iiif API](http://iiif.io/).
 
-Image API [Compliance](http://iiif.io/api/image/2.1/compliance/) Level 1 is reached.
+Image API [Compliance](http://iiif.io/api/image/2.1/compliance/) Level 2 is reached.
 
 ## setup
 
@@ -20,7 +20,7 @@ $ ./iiif --host 0.0.0.0 --port 8080 --root images
 $ go run server.go --port 8080 --root images
 ```
 
-## iiif image API 2.1
+## IIIF image API 2.1
 
 The API specifications can be found on [iiif.io](http://iiif.io/api/image/2.1/index.html).
 
@@ -39,7 +39,7 @@ The API specifications can be found on [iiif.io](http://iiif.io/api/image/2.1/in
 
 * `full`: the full image **(deprecated)**
 * `max`: the full image
-* `w,h`: a potentially deformed image of `w x h` **(not supported)**
+* `w,h`: a potentially deformed image of `w x h`
 * `!w,h`: a non-deformed image of maximum `w x h`
 * `w,`: a non-deformed image with `w` as the width
 * `,h`: a non-deformed image with `h` as the height
@@ -88,7 +88,7 @@ test some aspects of the API.
 
 ## TODO
 
-* Compliance Level 2
+* Figure out how `ProfileSize` and `ProfileTile` can be made useful.
 * Caching
 * Sendfile
 * Presentation API
