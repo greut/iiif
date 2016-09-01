@@ -45,7 +45,7 @@ There is a [sample config file](config.json.example) included with this repo.
 }
 ```
 
-_Detailed documentation to follow._
+_More better documentation to follow but in the meantime..._
 
 ### graphics
 
@@ -55,7 +55,7 @@ Details about how images should be processed.
 
 Details about what will do the actual image processing.
 
-* VIPS - currently there is only VIPS which is aich is an interface to the [() librarys
+* VIPS - currently there is only VIPS which is aich is an interface to the [libvips](http://www.vips.ecs.soton.ac.uk/index.php?title=VIPS) libraryy.
 
 ### images
 
