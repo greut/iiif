@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func ScrubIdentifier(identifier string) (string, err) {
+func ScrubIdentifier(identifier string) (string, error) {
 
 	clean, err := url.QueryUnescape(identifier)
 

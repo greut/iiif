@@ -30,7 +30,7 @@ type SizeInstruction struct {
 
 type RotationInstruction struct {
 	Flip  bool
-	Angle float64
+	Angle int64
 }
 
 // full
@@ -218,34 +218,34 @@ func (t *Transformation) RegionInstructions(im *Image) (*RegionInstruction, erro
 			return nil, errors.New(message)
 		}
 
-		x, err := strconv.ParseFloat(sizes[0], 64)
+		px, err := strconv.ParseFloat(sizes[0], 64)
 
 		if err != nil {
 			return nil, err
 		}
 
-		y, err := strconv.ParseFloat(sizes[1], 64)
+		py, err := strconv.ParseFloat(sizes[1], 64)
 
 		if err != nil {
 			return nil, err
 		}
 
-		w, err := strconv.ParseFloat(sizes[2], 64)
+		pw, err := strconv.ParseFloat(sizes[2], 64)
 
 		if err != nil {
 			return nil, err
 		}
 
-		h, err := strconv.ParseFloat(sizes[3], 64)
+		ph, err := strconv.ParseFloat(sizes[3], 64)
 
 		if err != nil {
 			return nil, err
 		}
 
-		w = int(math.Ceil(float64(width) * w / 100.))
-		h = int(math.Ceil(float64(height) * h / 100.))
-		x = int(math.Ceil(float64(width) * x / 100.))
-		y = int(math.Ceil(float64(height) * y / 100.))
+		w := int(math.Ceil(float64(width) * pw / 100.))
+		h := int(math.Ceil(float64(height) * ph / 100.))
+		x := int(math.Ceil(float64(width) * px / 100.))
+		y := int(math.Ceil(float64(height) * py / 100.))
 
 		instruction := RegionInstruction{
 			Width:  w,
@@ -284,7 +284,7 @@ func (t *Transformation) SizeInstructions(im *Image) (*SizeInstruction, error) {
 		}
 
 		wi, err_w := strconv.ParseInt(sizes[0], 10, 64)
-		h, err_h := strconv.ParseInt(sizes[1], 10, 64)
+		hi, err_h := strconv.ParseInt(sizes[1], 10, 64)
 
 		if err_w != nil && err_h != nil {
 			message := fmt.Sprintf(sizeError, t.Size)
@@ -293,7 +293,7 @@ func (t *Transformation) SizeInstructions(im *Image) (*SizeInstruction, error) {
 		} else if err_w == nil && err_h == nil {
 
 			w = int(wi)
-			h = int(h)
+			h = int(hi)
 
 			if best {
 				enlarge = true
@@ -306,17 +306,17 @@ func (t *Transformation) SizeInstructions(im *Image) (*SizeInstruction, error) {
 			h = 0
 		} else {
 			w = 0
-			h = int(h)
+			h = int(hi)
 		}
 
-		d := Dimensions{
+		instruction := SizeInstruction{
 			Height:  h,
 			Width:   w,
 			Enlarge: enlarge,
 			Force:   force,
 		}
 
-		return &d, nil
+		return &instruction, nil
 
 	} else if arr[0] == "pct" {
 
@@ -330,7 +330,7 @@ func (t *Transformation) SizeInstructions(im *Image) (*SizeInstruction, error) {
 		dims, err := im.Dimensions()
 
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		width := dims.Width()
