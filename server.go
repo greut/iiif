@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var port = flag.String("port", "80", "Define which TCP port to use")
@@ -213,6 +214,25 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 
 	identifier = strings.Replace(identifier, "../", "", -1)
 	filename := filepath.Join(*root, identifier)
+
+	stat, err := os.Stat(filename)
+	if err != nil {
+		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
+		http.NotFound(w, r)
+		return
+	}
+
+	lastModifiedSince := r.Header.Get("If-Modified-Since")
+	if lastModifiedSince != "" {
+		t, _ := time.Parse(time.UnixDate, lastModifiedSince)
+		if err == nil {
+			if !t.Before(stat.ModTime()) {
+				http.Redirect(w, r, "Not Modified", 304)
+				return
+			}
+		}
+	}
+
 	buffer, err := bimg.Read(filename)
 	if err != nil {
 		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
@@ -446,7 +466,9 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", contentType)
+	h := w.Header()
+	h.Set("Content-Type", contentType)
+	h.Set("Last-Modified", stat.ModTime().Format(time.UnixDate))
 	_, err = w.Write(image.Image())
 	if err != nil {
 		message := fmt.Sprintf("bimg counldn't write the image: %#v", err.Error())
