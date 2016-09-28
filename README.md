@@ -89,6 +89,10 @@ test some aspects of the API.
 ## TODO
 
 * Figure out how `ProfileSize` and `ProfileTile` can be made useful.
-* Caching
+* Caching (reading from the disk)
+* Caching (produced assets)
 * Sendfile
-* Presentation API
+
+## Friendly projects
+
+* [thisisaaronland/go-iiif](https://github.com/thisisaaronland/go-iiif)

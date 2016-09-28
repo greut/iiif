@@ -30,7 +30,7 @@ var regionError = "IIIF 2.1 `region` argument is not recognized: %#v"
 var sizeError = "IIIF 2.1 `size` argument is not recognized: %#v"
 var rotationError = "IIIF 2.1 `rotation` argument is not recognized: %#v"
 var rotationMissing = "libvips cannot rotate angle that isn't a multiple of 90: %#v"
-var formatError = "IIIf 2.1 `format` argument is not yet recognized: %#v"
+var formatError = "IIIF 2.1 `format` argument is not yet recognized: %#v"
 var formatMissing = "libvips cannot output this format %#v as of yet"
 
 // Level contains the technical properties about the service.
@@ -94,7 +94,7 @@ func RedirectHandler(w http.ResponseWriter, r *http.Request) {
 
 	identifier = strings.Replace(identifier, "../", "", -1)
 
-	http.Redirect(w, r, fmt.Sprintf("http://%s/%s/info.json", r.Host, identifier), 303)
+	http.Redirect(w, r, fmt.Sprintf("%s://%s/%s/info.json", r.URL.Scheme, r.Host, identifier), 303)
 }
 
 // InfoHandler responds to the image technical properties.
@@ -129,7 +129,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 
 	p := Profile{
 		Context:  "http://iiif.io/api/image/2/context.json",
-		ID:       fmt.Sprintf("http://%s/%s", r.Host, identifier),
+		ID:       fmt.Sprintf("%s://%s/%s", r.URL.Scheme, r.Host, identifier),
 		Type:     "iiif:Image",
 		Protocol: "http://iiif.io/api/image",
 		Width:    size.Width,
