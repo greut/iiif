@@ -147,7 +147,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 		//Tiles: []ProfileTile{},
 	}
 
-	b, err := json.Marshal(p)
+	b, err := json.MarshalIndent(p, "", "  ")
 	if err != nil {
 		log.Fatal("Cannot create profile")
 	}

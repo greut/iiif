@@ -12,6 +12,10 @@ Image API [Compliance](http://iiif.io/api/image/2.1/compliance/) Level 2 is reac
 libvips is required by [bimg](https://github.com/h2non/bimg/).
 
 ```
+$ go get -u \
+         github.com/gorilla/mux \
+         gopkg.in/h2non/bimg.v1 \
+         github.com/golang/lint/golint
 $ go build
 $ ./iiif --help
 
@@ -66,7 +70,7 @@ __limitations__ bimg only supports rotations that are multiples of 90.
 * `webp`
 * `tiff`
 
-__limitations__ : bimg (libvips) doesn't support writing to `jp2`, `gif` or `pdf`.
+__limitations__ : bimg (libvips) doesn't support writing to `gif`, `jp2` or `pdf`.
 
 ### [Profile](http://iiif.io/api/image/2.1/#image-information)
 
