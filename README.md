@@ -15,12 +15,10 @@ $ go get -u \
          github.com/gorilla/mux \
          gopkg.in/h2non/bimg.v1 \
          github.com/golang/lint/golint
-$ go build
-$ ./iiif --help
+$ go build -o bin/iiif
+$ bin/iiif --help
 
-$ ./iiif --host 0.0.0.0 --port 8080 --root images
-
-$ go run server.go --port 8080 --root images
+$ bin/iiif --host 0.0.0.0 --port 8080 --root images
 ```
 
 ## IIIF image API 2.1
