@@ -33,40 +33,45 @@ var rotationMissing = "libvips cannot rotate angle that isn't a multiple of 90: 
 var formatError = "IIIF 2.1 `format` argument is not yet recognized: %#v"
 var formatMissing = "libvips cannot output this format %#v as of yet"
 
-// Level contains the technical properties about the service.
-type Level struct {
-	Context string `json:"@context"`
-	//ID        string   `json:"@id"`
-	Type      string   `json:"@type"` // Optional or iiif:ImageProfile
+// IiifImageProfile contains the technical properties about the service.
+type IiifImageProfile struct {
+	Context   string   `json:"@context,omitempty"`
+	ID        string   `json:"@id,omitempty"`
+	Type      string   `json:"@type,omitempty"` // empty or iiif:ImageProfile
 	Formats   []string `json:"formats"`
+	maxArea   int      `json:"maxArea,omitempty"`
+	maxHeight int      `json:"maxHeight,omitempty"`
+	maxWidth  int      `json:"maxWidth,omitempty"`
 	Qualities []string `json:"qualities"`
-	Supports  []string `json:"supports"`
+	Supports  []string `json:"supports,omitempty"`
 }
 
-// ProfileSize contains the information for the available sizes
-type ProfileSize struct {
-	Width  int `json:"width"`
-	Height int `json:"height"`
+// IiifSize contains the information for the available sizes
+type IiifSize struct {
+	Type   string `json:"@type,omitempty"` // empty or iiif:Size
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
 }
 
-// ProfileTile contains the information to deal with tiles.
-type ProfileTile struct {
-	ScaleFactors []int `json:"scaleFactors"`
-	Width        int   `json:"width"`
-	Height       int   `json:"height"`
+// IiifTile contains the information to deal with tiles.
+type IiifTile struct {
+	Type         string `json:"@type,omitempty"` // empty or iiif:Tile
+	ScaleFactors []int  `json:"scaleFactors"`
+	Width        int    `json:"width"`
+	Height       int    `json:"height"`
 }
 
-// Profile contains the technical properties about an image.
-type Profile struct {
+// IiifImage contains the technical properties about an image.
+type IiifImage struct {
 	Context  string        `json:"@context"`
 	ID       string        `json:"@id"`
-	Type     string        `json:"@type"` // Optional or iiif:Image
+	Type     string        `json:"@type,omitempty"` // empty or iiif:Image
 	Protocol string        `json:"protocol"`
 	Width    int           `json:"width"`
 	Height   int           `json:"height"`
 	Profile  []interface{} `json:"profile"`
-	//Sizes    []ProfileSize `json:"sizes"`
-	//Tiles    []ProfileTile `json:"tiles"`
+	Sizes    []IiifSize    `json:"sizes,omitempty"`
+	Tiles    []IiifTile    `json:"tiles,omitempty"`
 }
 
 // IndexHandler responds to the service homepage.
@@ -127,7 +132,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p := Profile{
+	p := IiifImage{
 		Context:  "http://iiif.io/api/image/2/context.json",
 		ID:       fmt.Sprintf("%s://%s/%s", r.URL.Scheme, r.Host, identifier),
 		Type:     "iiif:Image",
@@ -136,15 +141,33 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 		Height:   size.Height,
 		Profile: []interface{}{
 			"http://iiif.io/api/image/2/level2.json",
-			&Level{
+			&IiifImageProfile{
 				Context:   "http://iiif.io/api/image/2/context.json",
 				Type:      "iiif:ImageProfile",
 				Formats:   []string{"jpg", "png", "webp"},
 				Qualities: []string{"gray", "default"},
+				Supports: []string{
+					//"baseUriRedirect",
+					//"canonicalLinkHeader",
+					//"cors",
+					"jsonldMediaType",
+					"mirroring",
+					//"profileLinkHeader",
+					"regionByPct",
+					"regionByPx",
+					"regionSquare",
+					//"rotationArbitrary",
+					"rotationBy90s",
+					"sizeAboveFull",
+					"sizeByConfinedWh",
+					"sizeByDistortedWh",
+					"sizeByH",
+					"sizeByPct",
+					"sizeByW",
+					"sizeByWh",
+				},
 			},
 		},
-		//Sizes: []ProfileSize{},
-		//Tiles: []ProfileTile{},
 	}
 
 	b, err := json.MarshalIndent(p, "", "  ")
