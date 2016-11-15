@@ -6,9 +6,9 @@ type IiifImageProfile struct {
 	ID        string   `json:"@id,omitempty"`
 	Type      string   `json:"@type,omitempty"` // empty or iiif:ImageProfile
 	Formats   []string `json:"formats"`
-	maxArea   int      `json:"maxArea,omitempty"`
-	maxHeight int      `json:"maxHeight,omitempty"`
-	maxWidth  int      `json:"maxWidth,omitempty"`
+	MaxArea   int      `json:"maxArea,omitempty"`
+	MaxHeight int      `json:"maxHeight,omitempty"`
+	MaxWidth  int      `json:"maxWidth,omitempty"`
 	Qualities []string `json:"qualities"`
 	Supports  []string `json:"supports,omitempty"`
 }
