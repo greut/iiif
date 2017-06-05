@@ -76,9 +76,14 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	scheme := "https"
+	if r.TLS == nil {
+		scheme = "http"
+	}
+
 	p := IiifImage{
 		Context:  "http://iiif.io/api/image/2/context.json",
-		ID:       fmt.Sprintf("%s://%s/%s", r.URL.Scheme, r.Host, identifier),
+		ID:       fmt.Sprintf("%s://%s/%s", scheme, r.Host, identifier),
 		Type:     "iiif:Image",
 		Protocol: "http://iiif.io/api/image",
 		Width:    size.Width,
