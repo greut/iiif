@@ -440,6 +440,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 
 	h := w.Header()
 	h.Set("Content-Type", contentType)
+	h.Set("Content-Length", strconv.Itoa(image.Length()))
 	h.Set("Last-Modified", stat.ModTime().Format(time.UnixDate))
 	_, err = w.Write(image.Image())
 	if err != nil {
