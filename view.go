@@ -409,23 +409,17 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	} else if format == "png" {
 		options.Type = bimg.PNG
 		contentType = "image/png"
-		w.Header().Set("Content-Type", "image/png")
 	} else if format == "webp" {
 		options.Type = bimg.WEBP
 		contentType = "image/webp"
-		w.Header().Set("Content-Type", "image/webp")
 	} else if format == "tif" || format == "tiff" {
 		options.Type = bimg.TIFF
 		contentType = "image/tiff"
 	} else if format == "gif" || format == "pdf" || format == "jp2" {
-		contentType = "unsupported"
-	}
-
-	if contentType == "unsupported" {
 		message := fmt.Sprintf(formatMissing, format)
 		http.Error(w, message, 501)
 		return
-	} else if contentType == "" {
+	} else {
 		message := fmt.Sprintf(formatError, format)
 		http.Error(w, message, 400)
 		return
