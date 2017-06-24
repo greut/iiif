@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
 	"gopkg.in/h2non/bimg.v1"
@@ -18,15 +21,37 @@ import (
 	"time"
 )
 
+type IndexURL struct {
+	Url     *url.URL
+	Encoded string
+}
+
+type IndexURLList []*IndexURL
+
+type IndexData struct {
+	Files []os.FileInfo
+	Urls  IndexURLList
+}
+
 // IndexHandler responds to the service homepage.
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	files, _ := ioutil.ReadDir(*root)
 
-	p := &struct{ Files []os.FileInfo }{Files: files}
+	yoan, _ := url.Parse("http://dosimple.ch/yoan.png")
+
+	p := IndexData{
+		Files: files,
+		Urls: IndexURLList{
+			{
+				yoan,
+				base64.StdEncoding.EncodeToString([]byte(yoan.String())),
+			},
+		},
+	}
 
 	t, _ := template.ParseFiles("templates/index.html")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	t.Execute(w, p)
+	t.Execute(w, &p)
 }
 
 // RedirectHandler responds to the image technical properties.
@@ -49,26 +74,13 @@ func RedirectHandler(w http.ResponseWriter, r *http.Request) {
 // InfoHandler responds to the image technical properties.
 func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
 	identifier := vars["identifier"]
-	identifier, err := url.QueryUnescape(identifier)
+	image, _, err := openImage(identifier, "")
 	if err != nil {
-		log.Printf("Filename is frob %#v", identifier)
 		http.NotFound(w, r)
 		return
 	}
 
-	identifier = strings.Replace(identifier, "../", "", -1)
-
-	filename := filepath.Join(*root, identifier)
-	buffer, err := bimg.Read(filename)
-	if err != nil {
-		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
-		http.NotFound(w, r)
-		return
-	}
-
-	image := bimg.NewImage(buffer)
 	size, err := image.Size()
 	if err != nil {
 		message := fmt.Sprintf(openError, identifier)
@@ -174,45 +186,23 @@ func ViewerHandler(w http.ResponseWriter, r *http.Request) {
 func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
+	//log.Printf("vars %#v", vars)
+
 	quality := vars["quality"]
 	format := vars["format"]
-
-	identifier, err := url.QueryUnescape(vars["identifier"])
-	if err != nil {
-		log.Printf("Filename is frob %#v", vars["identifier"])
-		http.NotFound(w, r)
-		return
-	}
-
-	identifier = strings.Replace(identifier, "../", "", -1)
-	filename := filepath.Join(*root, identifier)
-
-	stat, err := os.Stat(filename)
-	if err != nil {
-		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
-		http.NotFound(w, r)
-		return
-	}
-
+	identifier := vars["identifier"]
 	lastModifiedSince := r.Header.Get("If-Modified-Since")
-	if lastModifiedSince != "" {
-		t, _ := time.Parse(time.UnixDate, lastModifiedSince)
-		if err == nil {
-			if !t.Before(stat.ModTime()) {
-				http.Redirect(w, r, "Not Modified", 304)
-				return
-			}
-		}
-	}
 
-	buffer, err := bimg.Read(filename)
+	image, stat, err := openImage(identifier, lastModifiedSince)
 	if err != nil {
-		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
-		http.NotFound(w, r)
+		if err.Error() != "304" {
+			http.NotFound(w, r)
+		} else {
+			http.Redirect(w, r, "Not Modified", 304)
+		}
 		return
 	}
 
-	image := bimg.NewImage(buffer)
 	size, err := image.Size()
 	if err != nil {
 		message := fmt.Sprintf(openError, err.Error())
@@ -436,10 +426,63 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	h := w.Header()
 	h.Set("Content-Type", contentType)
 	h.Set("Content-Length", strconv.Itoa(len(buf)))
-	h.Set("Last-Modified", stat.ModTime().Format(time.UnixDate))
+	if stat != nil {
+		h.Set("Last-Modified", stat.ModTime().Format(time.UnixDate))
+	}
 	_, err = w.Write(buf)
 	if err != nil {
 		message := fmt.Sprintf("bimg counldn't write the image: %#v", err.Error())
 		http.Error(w, message, 500)
 	}
+}
+
+func openImage(identifier, lastModifiedSince string) (*bimg.Image, os.FileInfo, error) {
+	identifier, err := url.QueryUnescape(identifier)
+	if err != nil {
+		log.Printf("Filename is frob %#v", identifier)
+		return nil, nil, err
+	}
+
+	identifier = strings.Replace(identifier, "../", "", -1)
+
+	filename := filepath.Join(*root, identifier)
+	stat, err := os.Stat(filename)
+	var buffer []byte
+	if err != nil {
+		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
+		url, err := base64.StdEncoding.DecodeString(identifier)
+		if err != nil {
+			log.Printf("Not a base64 encoded URL either.")
+			return nil, nil, err
+		}
+
+		resp, err := http.Get(string(url))
+		if err != nil {
+			log.Printf("Download error: %#v.", err)
+			return nil, nil, err
+		}
+		defer resp.Body.Close()
+		// XXX deal with last-modified-since...
+		buf := bytes.NewBuffer(make([]byte, 0, resp.ContentLength))
+		_, err = buf.ReadFrom(resp.Body)
+		buffer = buf.Bytes()
+	} else {
+		if lastModifiedSince != "" {
+			t, _ := time.Parse(time.UnixDate, lastModifiedSince)
+			if err == nil {
+				if !t.Before(stat.ModTime()) {
+					return nil, nil, errors.New("304")
+				}
+			}
+		}
+
+		buffer, err = bimg.Read(filename)
+		if err != nil {
+			log.Printf("Cannot open file %#v: %#v", filename, err.Error())
+			return nil, nil, err
+		}
+	}
+
+	image := bimg.NewImage(buffer)
+	return image, stat, nil
 }

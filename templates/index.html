@@ -6,6 +6,14 @@
     </head>
     <body>
         <h1>IIIF go server</h1>
+        {{ range .Urls }}
+        <h2>{{ .Url.Path }}</h2>
+        <p>Zoomable interfaces:
+            <a href="/{{ .Encoded }}/openseadragon.html">OpenSeadragon</a>,
+            <a href="/{{ .Encoded }}/leaflet.html">Leaflet-IIIF</a>,
+            <a href="/{{ .Encoded }}/iiifviewer.html">IiifViewer</a>.
+        </p>
+        {{ end }}
         {{ range $image := .Files }}
         <h2>{{ $image.Name }}</h2>
         <p>Zoomable interfaces:
