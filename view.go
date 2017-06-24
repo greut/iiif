@@ -275,6 +275,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 				opts.AreaHeight = int(math.Ceil(float64(size.Height) * h / 100.))
 				opts.Left = int(math.Ceil(float64(size.Width) * x / 100.))
 				opts.Top = int(math.Ceil(float64(size.Height) * y / 100.))
+				opts.AreaWidth += opts.Left
 			} else {
 				message := fmt.Sprintf(regionError, region)
 				http.Error(w, message, 400)
@@ -285,7 +286,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		// Hack: libvips does strange things here.
 		// * https://github.com/h2non/bimg/issues/60
 		// * https://github.com/h2non/bimg/commit/b7eaa00f104a8eab49eedf49d75b11308df95f7a
-		if opts.Top == 0 && opts.Left == 0 {
+		if opts.Top <= 0 && opts.Left == 0 {
 			opts.Top = -1
 		}
 
@@ -391,9 +392,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	if quality == "color" || quality == "default" || quality == "native" {
 		// do nothing.
 	} else if quality == "gray" {
-		// FIXME: causes segmentation fault (core dumped)
-		//options.Interpretation = bimg.InterpretationGREY16
-		options.Interpretation = bimg.InterpretationBW
+		options.Interpretation = bimg.InterpretationGREY16
 	} else if quality == "bitonal" {
 		options.Interpretation = bimg.InterpretationBW
 	} else {
@@ -434,9 +433,9 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 
 	h := w.Header()
 	h.Set("Content-Type", contentType)
-	h.Set("Content-Length", strconv.Itoa(image.Length()))
+	h.Set("Content-Length", strconv.Itoa(len(buf)))
 	h.Set("Last-Modified", stat.ModTime().Format(time.UnixDate))
-	_, err = w.Write(image.Image())
+	_, err = w.Write(buf)
 	if err != nil {
 		message := fmt.Sprintf("bimg counldn't write the image: %#v", err.Error())
 		http.Error(w, message, 500)
