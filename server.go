@@ -4,8 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
+	"gopkg.in/djherbis/fscache.v0"
 	"log"
 	"net/http"
+	"time"
 )
 
 var port = flag.String("port", "80", "Define which TCP port to use")
@@ -36,6 +38,13 @@ func main() {
 	router.HandleFunc("/{identifier}", RedirectHandler)
 	router.HandleFunc("/", IndexHandler)
 
-	log.Println(fmt.Sprintf("Server running on %v:%v", *host, *port))
-	panic(http.ListenAndServe(fmt.Sprintf("%v:%v", *host, *port), router))
+	cache, err := fscache.New("./fscache", 0700, 6*time.Hour)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	listen := fmt.Sprintf("%v:%v", *host, *port)
+
+	log.Println(fmt.Sprintf("Server running on %v", listen))
+	panic(http.ListenAndServe(listen, fscache.Handler(cache, router)))
 }
