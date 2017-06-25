@@ -44,7 +44,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 	p := indexData{
 		Files: files,
-		Urls: indexURLList{
+		URLs: indexURLList{
 			{
 				yoan,
 				base64.StdEncoding.EncodeToString([]byte(yoan.String())),
@@ -213,6 +213,33 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Content-Type
+	contentType := ""
+	bimgType := bimg.JPEG
+	if format == "jpg" || format == "jpeg" {
+		bimgType = bimg.JPEG
+		contentType = "image/jpg"
+	} else if format == "png" {
+		bimgType = bimg.PNG
+		contentType = "image/png"
+	} else if format == "webp" {
+		bimgType = bimg.WEBP
+		contentType = "image/webp"
+	} else if format == "tif" || format == "tiff" {
+		bimgType = bimg.TIFF
+		contentType = "image/tiff"
+	} else if format == "gif" || format == "pdf" || format == "jp2" {
+		message := fmt.Sprintf(formatMissing, format)
+		http.Error(w, message, 501)
+		return
+	}
+
+	if contentType == "" {
+		message := fmt.Sprintf(formatError, format)
+		http.Error(w, message, 400)
+		return
+	}
+
 	// Region
 	// ------
 	// full
@@ -226,6 +253,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 			AreaHeight: size.Height,
 			Top:        0,
 			Left:       0,
+			Type:       bimgType,
 		}
 		if region == "square" {
 			if size.Width < size.Height {
@@ -298,6 +326,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	options := bimg.Options{
 		Width:  size.Width,
 		Height: size.Height,
+		Type:   bimgType,
 	}
 
 	// Size
@@ -390,31 +419,6 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		options.Interpretation = bimg.InterpretationBW
 	} else {
 		message := fmt.Sprintf(qualityError, quality)
-		http.Error(w, message, 400)
-		return
-	}
-
-	contentType := ""
-	if format == "jpg" || format == "jpeg" {
-		options.Type = bimg.JPEG
-		contentType = "image/jpg"
-	} else if format == "png" {
-		options.Type = bimg.PNG
-		contentType = "image/png"
-	} else if format == "webp" {
-		options.Type = bimg.WEBP
-		contentType = "image/webp"
-	} else if format == "tif" || format == "tiff" {
-		options.Type = bimg.TIFF
-		contentType = "image/tiff"
-	} else if format == "gif" || format == "pdf" || format == "jp2" {
-		message := fmt.Sprintf(formatMissing, format)
-		http.Error(w, message, 501)
-		return
-	}
-
-	if contentType == "" {
-		message := fmt.Sprintf(formatError, format)
 		http.Error(w, message, 400)
 		return
 	}
