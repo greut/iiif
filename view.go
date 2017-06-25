@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/boltdb/bolt"
 	"github.com/gorilla/mux"
 	"gopkg.in/h2non/bimg.v1"
 	"html/template"
@@ -78,7 +79,11 @@ func RedirectHandler(w http.ResponseWriter, r *http.Request) {
 func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	identifier := vars["identifier"]
-	image, _, err := openImage(identifier, "")
+
+	ctx := r.Context()
+	cache, _ := ctx.Value("cache").(*bolt.DB)
+
+	image, _, err := openImage(identifier, cache, "")
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -164,14 +169,6 @@ func ViewerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	identifier = strings.Replace(identifier, "../", "", -1)
 
-	filename := filepath.Join(*root, identifier)
-	_, err = os.Stat(filename)
-	if err != nil {
-		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
-		http.NotFound(w, r)
-		return
-	}
-
 	p := &struct{ Image string }{Image: identifier}
 
 	tpl := filepath.Join(templates, viewer)
@@ -196,7 +193,9 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	identifier := vars["identifier"]
 	lastModifiedSince := r.Header.Get("If-Modified-Since")
 
-	image, stat, err := openImage(identifier, lastModifiedSince)
+	cache, _ := r.Context().Value("cache").(*bolt.DB)
+
+	image, stat, err := openImage(identifier, cache, lastModifiedSince)
 	if err != nil {
 		if err.Error() != "304" {
 			http.NotFound(w, r)
@@ -445,7 +444,8 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func openImage(identifier, lastModifiedSince string) (*bimg.Image, os.FileInfo, error) {
+func openImage(identifier string, cache *bolt.DB, lastModifiedSince string) (*bimg.Image, os.FileInfo, error) {
+	bucket := []byte("remote")
 	identifier, err := url.QueryUnescape(identifier)
 	if err != nil {
 		log.Printf("Filename is frob %#v", identifier)
@@ -465,16 +465,43 @@ func openImage(identifier, lastModifiedSince string) (*bimg.Image, os.FileInfo, 
 			return nil, nil, err
 		}
 
-		resp, err := http.Get(string(url))
+		// read from cache
+		err = cache.View(func(tx *bolt.Tx) error {
+			b := tx.Bucket(bucket)
+			if b == nil {
+				return fmt.Errorf("Bucket %q not found.", bucket)
+			}
+			buffer = b.Get(url)
+			return nil
+		})
+		// cache is empty
 		if err != nil {
-			log.Printf("Download error: %#v.", err)
-			return nil, nil, err
+			resp, err := http.Get(string(url))
+			if err != nil {
+				log.Printf("Download error: %q : %#v.", url, err)
+				return nil, nil, err
+			}
+			defer resp.Body.Close()
+			// XXX deal with last-modified-since...
+			buf := bytes.NewBuffer(make([]byte, 0, resp.ContentLength))
+			_, err = buf.ReadFrom(resp.Body)
+			buffer = buf.Bytes()
+
+			// store into cache
+			err = cache.Update(func(tx *bolt.Tx) error {
+				b, err := tx.CreateBucketIfNotExists(bucket)
+				if err != nil {
+					return err
+				}
+
+				return b.Put(url, buffer)
+			})
+			if err != nil {
+				log.Printf("Cannot update the cache: %q", url)
+			}
+		} else {
+			log.Printf("From cache %q", url)
 		}
-		defer resp.Body.Close()
-		// XXX deal with last-modified-since...
-		buf := bytes.NewBuffer(make([]byte, 0, resp.ContentLength))
-		_, err = buf.ReadFrom(resp.Body)
-		buffer = buf.Bytes()
 	} else {
 		if lastModifiedSince != "" {
 			t, _ := time.Parse(time.UnixDate, lastModifiedSince)

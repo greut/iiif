@@ -12,6 +12,7 @@ libvips is required by [bimg](https://github.com/h2non/bimg/).
 
 ```
 $ go get -u \
+         github.com/boltdb/bolt \
          github.com/golang/lint/golint \
          github.com/gorilla/mux \
          gopkg.in/h2non/bimg.v1
@@ -28,6 +29,7 @@ The API specifications can be found on [iiif.io](http://iiif.io/api/image/2.1/in
 ### [Identifier](http://iiif.io/api/image/2.1/#identifier)
 
 - `filename`: the name of the file **(all the images are in one folder)**
+- `base64(url)`: the url of the file **(encoded using base64)**
 
 ### [Region](http://iiif.io/api/image/2.1/index.html#region)
 
@@ -87,7 +89,6 @@ Some viewers are supporting the iiif API quiet out of the box, a good way to tes
 
 ## TODO
 
-- Caching
 - Sendfile
 
 ## Friendly projects
