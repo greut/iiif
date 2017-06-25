@@ -5,6 +5,7 @@ dist: trusty
 
 go:
   - 1.7
+  - 1.8
   - tip
 
 cache: apt
