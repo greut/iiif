@@ -25,10 +25,13 @@ var rotationMissing = "libvips cannot rotate angle that isn't a multiple of 90: 
 var formatError = "IIIF 2.1 `format` argument is not yet recognized: %#v"
 var formatMissing = "libvips cannot output this format %#v as of yet"
 
-func middleware(h http.Handler, db *bolt.DB) http.Handler {
+type contextKey string
+
+// WithBoltDB sets the context with a cache key.
+func WithBoltDB(h http.Handler, db *bolt.DB) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, "cache", db)
+		ctx = context.WithValue(ctx, contextKey("cache"), db)
 		r = r.WithContext(ctx)
 		h.ServeHTTP(w, r)
 	})
@@ -60,5 +63,5 @@ func main() {
 	listen := fmt.Sprintf("%v:%v", *host, *port)
 
 	log.Println(fmt.Sprintf("Server running on %v", listen))
-	panic(http.ListenAndServe(listen, middleware(router, cache)))
+	panic(http.ListenAndServe(listen, WithBoltDB(router, cache)))
 }

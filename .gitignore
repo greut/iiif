@@ -6,5 +6,5 @@ src/
 
 bower_components
 
-server
 init.sh
+cache.db
