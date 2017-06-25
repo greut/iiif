@@ -19,7 +19,7 @@ $ go get -u \
 $ go build -o bin/iiif
 $ bin/iiif --help
 
-$ bin/iiif --host 0.0.0.0 --port 8080 --root images
+$ bin/iiif --host 0.0.0.0 --port 8080 --root images --cache cache.db
 ```
 
 ## IIIF image API 2.1

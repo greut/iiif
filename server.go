@@ -13,7 +13,7 @@ import (
 var port = flag.String("port", "80", "Define which TCP port to use")
 var root = flag.String("root", ".", "Define root directory")
 var host = flag.String("host", "0.0.0.0", "Define the hostname")
-var db = flag.String("db", "cache.db", "Define the BoltDB database file")
+var db = flag.String("cache", "cache.db", "Define the BoltDB database file")
 var templates = "templates"
 
 var openError = "libvips cannot open this file: %#v"
@@ -25,13 +25,14 @@ var rotationMissing = "libvips cannot rotate angle that isn't a multiple of 90: 
 var formatError = "IIIF 2.1 `format` argument is not yet recognized: %#v"
 var formatMissing = "libvips cannot output this format %#v as of yet"
 
-type contextKey string
+// ContextKey is the cache key to use.
+type ContextKey string
 
 // WithBoltDB sets the context with a cache key.
 func WithBoltDB(h http.Handler, db *bolt.DB) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, contextKey("cache"), db)
+		ctx = context.WithValue(ctx, ContextKey("cache"), db)
 		r = r.WithContext(ctx)
 		h.ServeHTTP(w, r)
 	})

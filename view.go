@@ -81,27 +81,30 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	identifier := vars["identifier"]
 
 	ctx := r.Context()
-	cache, _ := ctx.Value("cache").(*bolt.DB)
+	cache, ok := ctx.Value(ContextKey("cache")).(*bolt.DB)
 
 	key := []byte(r.URL.String())
 	bucket := []byte("info")
 
 	var buffer []byte
+	var err error
 
-	err := cache.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket(bucket)
-		if b == nil {
-			return fmt.Errorf("bucket %q not found", bucket)
-		}
+	if ok {
+		err = cache.View(func(tx *bolt.Tx) error {
+			b := tx.Bucket(bucket)
+			if b == nil {
+				return fmt.Errorf("bucket %q not found", bucket)
+			}
 
-		buffer = b.Get(key)
-		if buffer == nil {
-			return fmt.Errorf("key is empty %q:%q", bucket, key)
-		}
-		return nil
-	})
+			buffer = b.Get(key)
+			if buffer == nil {
+				return fmt.Errorf("key is empty %q:%q", bucket, key)
+			}
+			return nil
+		})
+	}
 
-	if err != nil {
+	if !ok || err != nil {
 		image, _, err := openImage(identifier, cache, "")
 		if err != nil {
 			http.NotFound(w, r)
@@ -164,18 +167,22 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Store into cache
-		err = cache.Update(func(tx *bolt.Tx) error {
-			b, err := tx.CreateBucketIfNotExists(bucket)
-			if err != nil {
+		if ok {
+			err = cache.Update(func(tx *bolt.Tx) error {
+				b, err := tx.CreateBucketIfNotExists(bucket)
+				if err != nil {
+					return err
+				}
+
+				err = b.Put(key, buffer)
 				return err
+			})
+
+			if err != nil {
+				log.Printf("Cannot store %q:%q", key, bucket)
+			} else {
+				log.Printf("Stored %q:%q", bucket, key)
 			}
-
-			err = b.Put(key, buffer)
-			return err
-		})
-
-		if err != nil {
-			log.Printf("Cannot store %q into %q", key, bucket)
 		}
 	}
 
@@ -255,7 +262,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cache, _ := r.Context().Value("cache").(*bolt.DB)
+	cache, ok := r.Context().Value(ContextKey("cache")).(*bolt.DB)
 
 	key := []byte(r.URL.String())
 	bucket := []byte("image")
@@ -263,31 +270,32 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 
 	var buffer []byte
 	var lastModified string
+	var err error
 
-	err := cache.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket(bucket)
-		if b == nil {
-			return fmt.Errorf("bucket %q not found", bucket)
-		}
+	if ok {
+		err = cache.View(func(tx *bolt.Tx) error {
+			b := tx.Bucket(bucket)
+			if b == nil {
+				return fmt.Errorf("bucket %q not found", bucket)
+			}
 
-		buffer = b.Get(key)
-		if buffer == nil {
-			return fmt.Errorf("cached value is nil %q:%q", bucket, key)
-		}
+			buffer = b.Get(key)
+			if buffer == nil {
+				return fmt.Errorf("cached value is nil %q:%q", bucket, key)
+			}
 
-		b = tx.Bucket(bucket2)
-		if b == nil {
-			return fmt.Errorf("bucket %q not found", bucket2)
-		}
+			b = tx.Bucket(bucket2)
+			if b == nil {
+				return fmt.Errorf("bucket %q not found", bucket2)
+			}
 
-		lastModified = string(b.Get(key))
-		if lastModified == "" {
-			return fmt.Errorf("cached value is nil %q:%q", bucket2, key)
-		}
-		return nil
-	})
+			lastModified = string(b.Get(key))
+			// if lastModified is empty, we don't care much.
+			return nil
+		})
+	}
 
-	if err != nil {
+	if !ok || err != nil {
 		image, stat, err := openImage(identifier, cache, lastModifiedSince)
 		if err != nil {
 			if err.Error() != "304" {
@@ -501,30 +509,34 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Store into cache
-		err = cache.Update(func(tx *bolt.Tx) error {
-			b, err := tx.CreateBucketIfNotExists(bucket)
-			if err != nil {
-				return err
-			}
-
-			err = b.Put(key, buffer)
-			if err != nil {
-				return err
-			}
-
-			if lastModified != "" {
-				b, err = tx.CreateBucketIfNotExists(bucket2)
+		if ok {
+			err = cache.Update(func(tx *bolt.Tx) error {
+				b, err := tx.CreateBucketIfNotExists(bucket)
 				if err != nil {
 					return err
 				}
 
-				err = b.Put(key, []byte(lastModified))
-			}
-			return err
-		})
+				err = b.Put(key, buffer)
+				if err != nil {
+					return err
+				}
 
-		if err != nil {
-			log.Printf("Cannot store %q into %q", key, bucket)
+				if lastModified != "" {
+					b, err = tx.CreateBucketIfNotExists(bucket2)
+					if err != nil {
+						return err
+					}
+
+					err = b.Put(key, []byte(lastModified))
+				}
+				return err
+			})
+
+			if err != nil {
+				log.Printf("Cannot store %q:%q", bucket, key)
+			} else {
+				log.Printf("Stored %q:%q", bucket, key)
+			}
 		}
 	}
 

@@ -7,8 +7,11 @@ set -xe
 port=8000
 root=images
 image=cassons.jpg
+cache=.benchmark.db
 
-./bin/iiif -port $port -root $root & > /dev/null
+rm -f $cache
+go build -o bin/iiif
+./bin/iiif -cache $cache -port $port -root $root & > /dev/null 2>&1
 pid=$!
 
 suite() {
@@ -29,5 +32,7 @@ suite "info" "info.json"
 #suite "flip" "full/max/!0/default.jpg"
 #suite "gray" "full/full/0/gray.jpg"
 
+# Cleanup
+rm -f $cache
 # Kill the server
 kill -9 $pid
