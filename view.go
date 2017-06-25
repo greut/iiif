@@ -21,16 +21,19 @@ import (
 	"time"
 )
 
-type IndexURL struct {
-	Url     *url.URL
+// IndexURL contains a file URL and its base64 encoded version.
+type indexURL struct {
+	URL     *url.URL
 	Encoded string
 }
 
-type IndexURLList []*IndexURL
+// IndexURLList contains a list of IndexURL.
+type indexURLList []*indexURL
 
-type IndexData struct {
+// IndexData contains the data for the index page.
+type indexData struct {
 	Files []os.FileInfo
-	Urls  IndexURLList
+	URLs  indexURLList
 }
 
 // IndexHandler responds to the service homepage.
@@ -39,9 +42,9 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 	yoan, _ := url.Parse("http://dosimple.ch/yoan.png")
 
-	p := IndexData{
+	p := indexData{
 		Files: files,
-		Urls: IndexURLList{
+		Urls: indexURLList{
 			{
 				yoan,
 				base64.StdEncoding.EncodeToString([]byte(yoan.String())),
@@ -408,7 +411,9 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		message := fmt.Sprintf(formatMissing, format)
 		http.Error(w, message, 501)
 		return
-	} else {
+	}
+
+	if contentType == "" {
 		message := fmt.Sprintf(formatError, format)
 		http.Error(w, message, 400)
 		return

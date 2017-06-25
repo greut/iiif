@@ -6,8 +6,8 @@
     </head>
     <body>
         <h1>IIIF go server</h1>
-        {{ range .Urls }}
-        <h2>{{ .Url.Path }}</h2>
+        {{ range .URLs }}
+        <h2>{{ .URL.Path }}</h2>
         <p>Zoomable interfaces:
             <a href="/{{ .Encoded }}/openseadragon.html">OpenSeadragon</a>,
             <a href="/{{ .Encoded }}/leaflet.html">Leaflet-IIIF</a>,

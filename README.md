@@ -14,7 +14,6 @@ libvips is required by [bimg](https://github.com/h2non/bimg/).
 $ go get -u \
          github.com/golang/lint/golint \
          github.com/gorilla/mux \
-         gopkg.in/djherbis/fscache.v0 \
          gopkg.in/h2non/bimg.v1
 $ go build -o bin/iiif
 $ bin/iiif --help
@@ -86,12 +85,9 @@ Some viewers are supporting the iiif API quiet out of the box, a good way to tes
 - [Leaflet-IIIF](https://github.com/mejackreed/Leaflet-IIIF)
 - [IiifViewer](https://github.com/klokantech/iiifviewer) **(not working)**
 
-## Caching
-
-Very basic caching is done thanks to @djherbis's [fscache](https://github.com/djherbis/fscache)
-
 ## TODO
 
+- Caching
 - Sendfile
 
 ## Friendly projects
