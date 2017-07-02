@@ -38,6 +38,21 @@ func WithBoltDB(h http.Handler, db *bolt.DB) http.Handler {
 	})
 }
 
+func makeRouter() http.Handler {
+	router := mux.NewRouter()
+
+	router.PathPrefix("/assets").Handler(
+		http.StripPrefix("/assets",
+			http.FileServer(http.Dir("bower_components"))))
+	router.HandleFunc("/{identifier}/info.json", InfoHandler)
+	router.HandleFunc("/{identifier}/{region}/{size}/{rotation}/{quality}.{format}", ImageHandler)
+	router.HandleFunc("/{identifier}/{viewer}", ViewerHandler)
+	router.HandleFunc("/{identifier}", RedirectHandler)
+	router.HandleFunc("/", IndexHandler)
+
+	return router
+}
+
 func main() {
 	flag.Parse()
 
@@ -49,16 +64,7 @@ func main() {
 	defer cache.Close()
 
 	// Routing
-	router := mux.NewRouter()
-
-	router.PathPrefix("/assets").Handler(
-		http.StripPrefix("/assets",
-			http.FileServer(http.Dir("bower_components"))))
-	router.HandleFunc("/{identifier}/info.json", InfoHandler)
-	router.HandleFunc("/{identifier}/{region}/{size}/{rotation}/{quality}.{format}", ImageHandler)
-	router.HandleFunc("/{identifier}/{viewer}", ViewerHandler)
-	router.HandleFunc("/{identifier}", RedirectHandler)
-	router.HandleFunc("/", IndexHandler)
+	router := makeRouter()
 
 	// Serving
 	listen := fmt.Sprintf("%v:%v", *host, *port)
