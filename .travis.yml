@@ -59,4 +59,7 @@ script:
   - test `gofmt -s -d . | tee -a /dev/fd/2 | wc -l` -eq 0
   - test `golint . | tee -a /dev/fd/2 | wc -l` -eq 0
   - go tool vet .
-  - go build
+  - go test -v -race -covermode=atomic -coverprofile=coverage.out
+
+after_success:
+  - goveralls -coverprofile=coverage.out -service=travis-ci
