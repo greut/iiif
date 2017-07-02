@@ -135,7 +135,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 				&IiifImageProfile{
 					Context:   "http://iiif.io/api/image/2/context.json",
 					Type:      "iiif:ImageProfile",
-					Formats:   []string{"jpg", "png", "webp"},
+					Formats:   []string{"jpg", "png", "tif", "webp"},
 					Qualities: []string{"gray", "default"},
 					Supports: []string{
 						//"baseUriRedirect",
