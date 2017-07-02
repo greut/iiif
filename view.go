@@ -140,7 +140,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 					Supports: []string{
 						//"baseUriRedirect",
 						//"canonicalLinkHeader",
-						//"cors",
+						"cors",
 						"jsonldMediaType",
 						"mirroring",
 						//"profileLinkHeader",
@@ -195,7 +195,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 		header.Set("Content-Type", "application/json")
 	}
 	header.Set("Content-Length", strconv.Itoa(len(buffer)))
-	header.Set("access-control-allow-origin", "*")
+	header.Set("Access-Control-Allow-Origin", "*")
 	w.Write(buffer)
 }
 
