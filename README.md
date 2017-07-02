@@ -89,7 +89,8 @@ Some viewers are supporting the iiif API quiet out of the box, a good way to tes
 
 ## HTTP features
 
-- Supports [HTTP Range requests](https://developer.mozilla.org/en-US/docs/Web/HTTP/Range_requests) (but not multipart)
+- [Range requests](https://developer.mozilla.org/en-US/docs/Web/HTTP/Range_requests) (but not multipart)
+- [If-Modified-since](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since)
 
 ## TODO
 
