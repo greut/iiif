@@ -114,7 +114,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 		size, err := image.Size()
 		if err != nil {
 			message := fmt.Sprintf(openError, identifier)
-			http.Error(w, message, 501)
+			http.Error(w, message, http.StatusNotImplemented)
 			return
 		}
 
@@ -234,6 +234,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	format := vars["format"]
 	identifier := vars["identifier"]
 	lastModifiedSince := r.Header.Get("If-Modified-Since")
+	rangeContent := r.Header.Get("Range")
 
 	// Content-Type
 	contentType := ""
@@ -252,13 +253,13 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		contentType = "image/tiff"
 	} else if format == "gif" || format == "pdf" || format == "jp2" {
 		message := fmt.Sprintf(formatMissing, format)
-		http.Error(w, message, 501)
+		http.Error(w, message, http.StatusNotImplemented)
 		return
 	}
 
 	if contentType == "" {
 		message := fmt.Sprintf(formatError, format)
-		http.Error(w, message, 400)
+		http.Error(w, message, http.StatusBadRequest)
 		return
 	}
 
@@ -301,7 +302,8 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 			if err.Error() != "304" {
 				http.NotFound(w, r)
 			} else {
-				http.Redirect(w, r, "Not Modified", 304)
+				code := http.StatusNotModified
+				http.Redirect(w, r, http.StatusText(code), code)
 			}
 			return
 		}
@@ -309,7 +311,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		size, err := image.Size()
 		if err != nil {
 			message := fmt.Sprintf(openError, err.Error())
-			http.Error(w, message, 501)
+			http.Error(w, message, http.StatusNotImplemented)
 			return
 		}
 
@@ -343,7 +345,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 					sizes := strings.Split(arr[0], ",")
 					if len(sizes) != 4 {
 						message := fmt.Sprintf(regionError, region)
-						http.Error(w, message, 400)
+						http.Error(w, message, http.StatusBadRequest)
 						return
 					}
 					x, _ := strconv.ParseInt(sizes[0], 10, 64)
@@ -358,7 +360,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 					sizes := strings.Split(arr[1], ",")
 					if len(sizes) != 4 {
 						message := fmt.Sprintf(regionError, region)
-						http.Error(w, message, 400)
+						http.Error(w, message, http.StatusBadRequest)
 						return
 					}
 					x, _ := strconv.ParseFloat(sizes[0], 64)
@@ -372,7 +374,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 					opts.AreaWidth += opts.Left
 				} else {
 					message := fmt.Sprintf(regionError, region)
-					http.Error(w, message, 400)
+					http.Error(w, message, http.StatusBadRequest)
 					return
 				}
 			}
@@ -419,7 +421,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 
 				if len(sizes) != 2 {
 					message := fmt.Sprintf(sizeError, s)
-					http.Error(w, message, 400)
+					http.Error(w, message, http.StatusBadRequest)
 					return
 				}
 
@@ -428,7 +430,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 
 				if errW != nil && errH != nil {
 					message := fmt.Sprintf(sizeError, s)
-					http.Error(w, message, 400)
+					http.Error(w, message, http.StatusBadRequest)
 					return
 				} else if errW == nil && errH == nil {
 					options.Width = int(wi)
@@ -451,7 +453,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 				options.Height = int(math.Ceil(pct / 100 * float64(size.Height)))
 			} else {
 				message := fmt.Sprintf(sizeError, s)
-				http.Error(w, message, 400)
+				http.Error(w, message, http.StatusBadRequest)
 				return
 			}
 		}
@@ -466,11 +468,11 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 
 		if err != nil {
 			message := fmt.Sprintf(rotationError, rotation)
-			http.Error(w, message, 400)
+			http.Error(w, message, http.StatusBadRequest)
 			return
 		} else if angle%90 != 0 {
 			message := fmt.Sprintf(rotationMissing, rotation)
-			http.Error(w, message, 501)
+			http.Error(w, message, http.StatusNotImplemented)
 			return
 		}
 
@@ -492,14 +494,14 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 			options.Interpretation = bimg.InterpretationBW
 		} else {
 			message := fmt.Sprintf(qualityError, quality)
-			http.Error(w, message, 400)
+			http.Error(w, message, http.StatusBadRequest)
 			return
 		}
 
 		_, err = image.Process(options)
 		if err != nil {
 			message := fmt.Sprintf("bimg couldn't process the image: %#v", err.Error())
-			http.Error(w, message, 500)
+			http.Error(w, message, http.StatusInternalServerError)
 			return
 		}
 
@@ -541,15 +543,27 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h := w.Header()
+	h.Set("Accept-Ranges", "bytes")
 	h.Set("Content-Type", contentType)
-	h.Set("Content-Length", strconv.Itoa(len(buffer)))
 	if lastModified != "" {
 		h.Set("Last-Modified", lastModified)
+	}
+	if strings.HasPrefix(rangeContent, "bytes=") {
+		// XXX handle errors
+		ranges := strings.Split(rangeContent[6:], "-")
+		from, _ := strconv.Atoi(ranges[0])
+		to, _ := strconv.Atoi(ranges[1])
+		h.Set("Content-Range", fmt.Sprintf("%d-%d/%d", from, to, len(buffer)))
+		h.Set("Content-Length", strconv.Itoa(to-from+1))
+		buffer = buffer[from : to+1]
+		w.WriteHeader(http.StatusPartialContent)
+	} else {
+		h.Set("Content-Length", strconv.Itoa(len(buffer)))
 	}
 	_, err = w.Write(buffer)
 	if err != nil {
 		message := fmt.Sprintf("bimg counldn't write the image: %#v", err.Error())
-		http.Error(w, message, 500)
+		http.Error(w, message, http.StatusInternalServerError)
 	}
 }
 

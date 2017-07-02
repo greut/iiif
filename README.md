@@ -87,6 +87,10 @@ Some viewers are supporting the iiif API quiet out of the box, a good way to tes
 - [Leaflet-IIIF](https://github.com/mejackreed/Leaflet-IIIF)
 - [IiifViewer](https://github.com/klokantech/iiifviewer) **(not working)**
 
+## HTTP features
+
+- Supports [HTTP Range requests](https://developer.mozilla.org/en-US/docs/Web/HTTP/Range_requests) (but not multipart)
+
 ## TODO
 
 - Sendfile
