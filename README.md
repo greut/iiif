@@ -1,6 +1,6 @@
 # IIIF
 
-[![Build Status](https://travis-ci.org/greut/iiif.svg?branch=master)](https://travis-ci.org/greut/iiif) [![Go Report Card](https://goreportcard.com/badge/github.com/greut/iiif)](https://goreportcard.com/report/github.com/greut/iiif)
+[![Build Status](https://travis-ci.org/greut/iiif.svg?branch=master)](https://travis-ci.org/greut/iiif) [![Go Report Card](https://goreportcard.com/badge/github.com/greut/iiif)](https://goreportcard.com/report/github.com/greut/iiif) [![Coverage Status](https://coveralls.io/repos/github/greut/iiif/badge.svg?branch=master)](https://coveralls.io/github/greut/iiif?branch=master)
 
 A sample and quite dumb web server to serve pictures following the [iiif API](http://iiif.io/).
 
