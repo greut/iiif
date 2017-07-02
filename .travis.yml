@@ -51,9 +51,13 @@ before_install:
   - cd ..
 
 before_script:
-  - go get -u github.com/gorilla/mux
-  - go get -u gopkg.in/h2non/bimg.v1
-  - go get -u github.com/golang/lint/golint
+  - >
+    go get -u
+    github.com/boltdb/bolt
+    github.com/gorilla/mux
+    gopkg.in/h2non/bimg.v1
+    github.com/golang/lint/golint
+    github.com/mattn/goveralls
 
 script:
   - test `gofmt -s -d . | tee -a /dev/fd/2 | wc -l` -eq 0
