@@ -99,3 +99,4 @@ Some viewers are supporting the iiif API quiet out of the box, a good way to tes
 ## Friendly projects
 
 - [thisisaaronland/go-iiif](https://github.com/thisisaaronland/go-iiif)
+- [h2non/imaginary](https://github.com/h2non/imaginary)

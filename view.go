@@ -548,12 +548,31 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	if lastModified != "" {
 		h.Set("Last-Modified", lastModified)
 	}
-	if strings.HasPrefix(rangeContent, "bytes=") {
-		// XXX handle errors
+	if strings.HasPrefix(rangeContent, "bytes") {
 		ranges := strings.Split(rangeContent[6:], "-")
+
 		from, _ := strconv.Atoi(ranges[0])
-		to, _ := strconv.Atoi(ranges[1])
-		h.Set("Content-Range", fmt.Sprintf("%d-%d/%d", from, to, len(buffer)))
+		to, err := strconv.Atoi(ranges[1])
+		if err != nil {
+			to = len(buffer) - 1
+		}
+
+		// Negative range, e.g. -1024
+		if ranges[0] == "" {
+			from = len(buffer) - to
+			to = len(buffer) - 1
+		}
+
+		// Not satisfiable ranges
+		if to > len(buffer) || from < 0 {
+			h.Set("Content-Range", fmt.Sprintf("bytes */%d", len(buffer)))
+
+			code := http.StatusRequestedRangeNotSatisfiable
+			http.Error(w, http.StatusText(code), code)
+			return
+		}
+
+		h.Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", from, to, len(buffer)))
 		h.Set("Content-Length", strconv.Itoa(to-from+1))
 		buffer = buffer[from : to+1]
 		w.WriteHeader(http.StatusPartialContent)
