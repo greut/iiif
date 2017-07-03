@@ -24,6 +24,7 @@ var rotationError = "IIIF 2.1 `rotation` argument is not recognized: %#v"
 var rotationMissing = "libvips cannot rotate angle that isn't a multiple of 90: %#v"
 var formatError = "IIIF 2.1 `format` argument is not yet recognized: %#v"
 var formatMissing = "libvips cannot output this format %#v as of yet"
+var multipartRangesNotSupported = "multipart ranges are not supported as of yet."
 
 // ContextKey is the cache key to use.
 type ContextKey string

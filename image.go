@@ -342,7 +342,12 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		h.Set("Last-Modified", lastModified)
 	}
 	if strings.HasPrefix(rangeContent, "bytes") {
-		ranges := strings.Split(rangeContent[6:], "-")
+		parts := strings.Split(rangeContent[6:], ",")
+		if len(parts) > 1 {
+			http.Error(w, multipartRangesNotSupported, http.StatusNotImplemented)
+			return
+		}
+		ranges := strings.Split(parts[0], "-")
 
 		from, _ := strconv.Atoi(ranges[0])
 		to, err := strconv.Atoi(ranges[1])

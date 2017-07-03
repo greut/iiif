@@ -129,3 +129,25 @@ func TestRangeNotSatisfiable(t *testing.T) {
 		t.Errorf("Content-Range doesn't match: got %v want bytes */26427", contentRange)
 	}
 }
+
+func TestRangeMultipartNotImplemented(t *testing.T) {
+	r := makeRouter()
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
+	req, err := http.NewRequest("GET", ts.URL+"/test.png/full/full/0/default.png", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Add("Range", "bytes 0-0,-1")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if status := resp.StatusCode; status != http.StatusNotImplemented {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusNotImplemented)
+	}
+}

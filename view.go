@@ -191,6 +191,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	header.Set("Content-Length", strconv.Itoa(len(buffer)))
 	header.Set("Access-Control-Allow-Origin", "*")
+	header.Set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
 	w.Write(buffer)
 }
 
