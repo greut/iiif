@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/boltdb/bolt"
+	"github.com/golang/groupcache"
 	"github.com/gorilla/mux"
 	"html/template"
 	"io/ioutil"
@@ -77,6 +78,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	cache, ok := ctx.Value(ContextKey("cache")).(*bolt.DB)
+	groupcache, ok := ctx.Value(ContextKey("groupcache")).(*groupcache.Group)
 
 	key := []byte(r.URL.String())
 	bucket := []byte("info")
@@ -100,7 +102,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !ok || err != nil {
-		image, _, err := openImage(identifier, cache, "")
+		image, _, err := openImage(identifier, groupcache, "")
 		if err != nil {
 			http.NotFound(w, r)
 			return

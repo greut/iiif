@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/boltdb/bolt"
+	"github.com/golang/groupcache"
 	"github.com/gorilla/mux"
 	"gopkg.in/h2non/bimg.v1"
 	"log"
@@ -57,6 +58,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cache, ok := r.Context().Value(ContextKey("cache")).(*bolt.DB)
+	groupcache, _ := r.Context().Value(ContextKey("groupcache")).(*groupcache.Group)
 
 	key := []byte(r.URL.String())
 	bucket := []byte("image")
@@ -90,7 +92,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !ok || err != nil {
-		image, stat, err := openImage(identifier, cache, lastModifiedSince)
+		image, stat, err := openImage(identifier, groupcache, lastModifiedSince)
 		if err != nil {
 			if err.Error() != "304" {
 				http.NotFound(w, r)
@@ -384,8 +386,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func openImage(identifier string, cache *bolt.DB, lastModifiedSince string) (*bimg.Image, os.FileInfo, error) {
-	bucket := []byte("remote")
+func openImage(identifier string, cache *groupcache.Group, lastModifiedSince string) (*bimg.Image, os.FileInfo, error) {
 	identifier, err := url.QueryUnescape(identifier)
 	if err != nil {
 		log.Printf("Filename is frob %#v", identifier)
@@ -405,45 +406,18 @@ func openImage(identifier string, cache *bolt.DB, lastModifiedSince string) (*bi
 			return nil, nil, err
 		}
 
-		// read from cache
-		err = cache.View(func(tx *bolt.Tx) error {
-			b := tx.Bucket(bucket)
-			if b == nil {
-				return fmt.Errorf("bucket %q not found", bucket)
-			}
-			buffer = b.Get(url)
-			if buffer == nil {
-				return fmt.Errorf("value is empty %q:%q", bucket, url)
-			}
-			return nil
-		})
-		// cache is empty
-		if err != nil {
-			resp, err := http.Get(string(url))
+		sURL := string(url)
+		if cache != nil {
+			err = cache.Get(nil, sURL, groupcache.AllocatingByteSliceSink(&buffer))
 			if err != nil {
-				log.Printf("Download error: %q : %#v.", url, err)
 				return nil, nil, err
 			}
-			defer resp.Body.Close()
-			// XXX deal with last-modified-since...
-			buf := bytes.NewBuffer(make([]byte, 0, resp.ContentLength))
-			_, err = buf.ReadFrom(resp.Body)
-			buffer = buf.Bytes()
-
-			// store into cache
-			err = cache.Update(func(tx *bolt.Tx) error {
-				b, err := tx.CreateBucketIfNotExists(bucket)
-				if err != nil {
-					return err
-				}
-
-				return b.Put(url, buffer)
-			})
-			if err != nil {
-				log.Printf("Cannot update the cache: %q", url)
-			}
+			log.Printf("From cache %v\n", sURL)
 		} else {
-			log.Printf("From cache %q", url)
+			buffer, err = downloadImage(sURL)
+			if err != nil {
+				return nil, nil, err
+			}
 		}
 	} else {
 		if lastModifiedSince != "" {
@@ -464,4 +438,19 @@ func openImage(identifier string, cache *bolt.DB, lastModifiedSince string) (*bi
 
 	image := bimg.NewImage(buffer)
 	return image, stat, nil
+}
+
+func downloadImage(url string) ([]byte, error) {
+	log.Printf("downloading %v\n", url)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Printf("Download error: %q : %#v.", url, err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+	// XXX deal with last-modified-since...
+	buf := bytes.NewBuffer(make([]byte, 0, resp.ContentLength))
+	_, err = buf.ReadFrom(resp.Body)
+	return buf.Bytes(), nil
 }

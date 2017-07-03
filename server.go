@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/boltdb/bolt"
+	"github.com/golang/groupcache"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -39,6 +40,16 @@ func WithBoltDB(h http.Handler, db *bolt.DB) http.Handler {
 	})
 }
 
+// WithGroupCache sets the cache
+func WithGroupCache(h http.Handler, group *groupcache.Group) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, ContextKey("groupcache"), group)
+		r = r.WithContext(ctx)
+		h.ServeHTTP(w, r)
+	})
+}
+
 func makeRouter() http.Handler {
 	router := mux.NewRouter()
 
@@ -54,8 +65,8 @@ func makeRouter() http.Handler {
 	return router
 }
 
-func main() {
-	flag.Parse()
+func makeHandler() http.Handler {
+	router := makeRouter()
 
 	// Caching
 	cache, err := bolt.Open(*db, 0600, nil)
@@ -64,12 +75,35 @@ func main() {
 	}
 	defer cache.Close()
 
+	me := fmt.Sprintf("http://%s/", *host)
+	peers := groupcache.NewHTTPPool(me)
+	peers.Set(me) // TODO add any other servers here...
+
+	// Group Cache
+	var group = groupcache.NewGroup("images", 64<<20, groupcache.GetterFunc(
+		func(ctx groupcache.Context, key string, dest groupcache.Sink) error {
+			url := key
+			data, err := downloadImage(url)
+			if err != nil {
+				return err
+			}
+			dest.SetBytes(data)
+			return nil
+		},
+	))
+
+	return WithGroupCache(WithBoltDB(router, cache), group)
+}
+
+func main() {
+	flag.Parse()
+
 	// Routing
-	router := makeRouter()
+	handler := makeHandler()
 
 	// Serving
 	listen := fmt.Sprintf("%v:%v", *host, *port)
 
 	log.Println(fmt.Sprintf("Server running on %v", listen))
-	panic(http.ListenAndServe(listen, WithBoltDB(router, cache)))
+	panic(http.ListenAndServe(listen, handler))
 }

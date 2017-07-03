@@ -13,6 +13,7 @@ libvips is required by [bimg](https://github.com/h2non/bimg/).
 ```
 $ go get -u \
          github.com/boltdb/bolt \
+         github.com/golang/groupcache \
          github.com/golang/lint/golint \
          github.com/gorilla/mux \
          gopkg.in/h2non/bimg.v1
