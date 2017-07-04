@@ -12,6 +12,7 @@ libvips is required by [bimg](https://github.com/h2non/bimg/).
 
 ```
 $ go get -u \
+         github.com/golang/protobuf/proto \
          github.com/golang/groupcache \
          github.com/golang/lint/golint \
          github.com/gorilla/mux \
@@ -95,3 +96,9 @@ Some viewers are supporting the iiif API quiet out of the box, a good way to tes
 
 - [thisisaaronland/go-iiif](https://github.com/thisisaaronland/go-iiif)
 - [h2non/imaginary](https://github.com/h2non/imaginary)
+
+## Protobuf
+
+```console
+$ PATH=$PATH:`pwd`/bin protoc --go_out=. image.proto
+```

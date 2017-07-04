@@ -253,7 +253,10 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	var buffer []byte
 	var err error
 	if thumbnails != nil {
-		err = thumbnails.Get(vars, sURL, groupcache.AllocatingByteSliceSink(&buffer))
+		var image = new(ImageWithModTime)
+		err = thumbnails.Get(vars, sURL, groupcache.ProtoSink(image))
+		buffer = image.GetBuffer()
+		_ = modTime.UnmarshalBinary(image.GetModTime())
 	} else {
 		var mt *time.Time
 		buffer, mt, err = resizeImage(vars, images)

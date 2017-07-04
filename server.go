@@ -78,12 +78,13 @@ func makeHandler() http.Handler {
 	var thumbnails = groupcache.NewGroup("thumbnails", 64<<20, groupcache.GetterFunc(
 		func(ctx groupcache.Context, key string, dest groupcache.Sink) error {
 			vars := ctx.(map[string]string)
-			// XXX _ is modTime, handle it!
-			data, _, err := resizeImage(vars, images)
+			data, modTime, err := resizeImage(vars, images)
 			if err != nil {
 				return err
 			}
-			dest.SetBytes(data)
+
+			binTime, _ := modTime.MarshalBinary()
+			dest.SetProto(&ImageWithModTime{binTime, data})
 			return nil
 		},
 	))
