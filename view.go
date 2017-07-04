@@ -1,10 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/boltdb/bolt"
 	"github.com/golang/groupcache"
 	"github.com/gorilla/mux"
 	"html/template"
@@ -14,7 +14,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 )
 
@@ -77,110 +76,68 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	identifier := vars["identifier"]
 
 	ctx := r.Context()
-	cache, ok := ctx.Value(ContextKey("cache")).(*bolt.DB)
-	groupcache, ok := ctx.Value(ContextKey("groupcache")).(*groupcache.Group)
+	groupcache, _ := ctx.Value(ContextKey("groupcache")).(*groupcache.Group)
 
-	key := []byte(r.URL.String())
-	bucket := []byte("info")
-
-	var buffer []byte
-	var err error
-
-	if ok {
-		err = cache.View(func(tx *bolt.Tx) error {
-			b := tx.Bucket(bucket)
-			if b == nil {
-				return fmt.Errorf("bucket %q not found", bucket)
-			}
-
-			buffer = b.Get(key)
-			if buffer == nil {
-				return fmt.Errorf("key is empty %q:%q", bucket, key)
-			}
-			return nil
-		})
+	image, modTime, err := openImage(identifier, groupcache)
+	if err != nil {
+		http.NotFound(w, r)
+		return
 	}
 
-	if !ok || err != nil {
-		image, _, err := openImage(identifier, groupcache, "")
-		if err != nil {
-			http.NotFound(w, r)
-			return
-		}
+	size, err := image.Size()
+	if err != nil {
+		message := fmt.Sprintf(openError, identifier)
+		http.Error(w, message, http.StatusNotImplemented)
+		return
+	}
 
-		size, err := image.Size()
-		if err != nil {
-			message := fmt.Sprintf(openError, identifier)
-			http.Error(w, message, http.StatusNotImplemented)
-			return
-		}
+	scheme := "https"
+	if r.TLS == nil {
+		scheme = "http"
+	}
 
-		scheme := "https"
-		if r.TLS == nil {
-			scheme = "http"
-		}
-
-		p := IiifImage{
-			Context:  "http://iiif.io/api/image/2/context.json",
-			ID:       fmt.Sprintf("%s://%s/%s", scheme, r.Host, identifier),
-			Type:     "iiif:Image",
-			Protocol: "http://iiif.io/api/image",
-			Width:    size.Width,
-			Height:   size.Height,
-			Profile: []interface{}{
-				"http://iiif.io/api/image/2/level2.json",
-				&IiifImageProfile{
-					Context:   "http://iiif.io/api/image/2/context.json",
-					Type:      "iiif:ImageProfile",
-					Formats:   []string{"jpg", "png", "tif", "webp"},
-					Qualities: []string{"gray", "default"},
-					Supports: []string{
-						//"baseUriRedirect",
-						//"canonicalLinkHeader",
-						"cors",
-						"jsonldMediaType",
-						"mirroring",
-						//"profileLinkHeader",
-						"regionByPct",
-						"regionByPx",
-						"regionSquare",
-						//"rotationArbitrary",
-						"rotationBy90s",
-						"sizeAboveFull",
-						"sizeByConfinedWh",
-						"sizeByDistortedWh",
-						"sizeByH",
-						"sizeByPct",
-						"sizeByW",
-						"sizeByWh",
-					},
+	p := IiifImage{
+		Context:  "http://iiif.io/api/image/2/context.json",
+		ID:       fmt.Sprintf("%s://%s/%s", scheme, r.Host, identifier),
+		Type:     "iiif:Image",
+		Protocol: "http://iiif.io/api/image",
+		Width:    size.Width,
+		Height:   size.Height,
+		Profile: []interface{}{
+			"http://iiif.io/api/image/2/level2.json",
+			&IiifImageProfile{
+				Context:   "http://iiif.io/api/image/2/context.json",
+				Type:      "iiif:ImageProfile",
+				Formats:   []string{"jpg", "png", "tif", "webp"},
+				Qualities: []string{"gray", "default"},
+				Supports: []string{
+					//"baseUriRedirect",
+					//"canonicalLinkHeader",
+					"cors",
+					"jsonldMediaType",
+					"mirroring",
+					//"profileLinkHeader",
+					"regionByPct",
+					"regionByPx",
+					"regionSquare",
+					//"rotationArbitrary",
+					"rotationBy90s",
+					"sizeAboveFull",
+					"sizeByConfinedWh",
+					"sizeByDistortedWh",
+					"sizeByH",
+					"sizeByPct",
+					"sizeByW",
+					"sizeByWh",
 				},
 			},
-		}
+		},
+	}
 
-		buffer, err = json.MarshalIndent(p, "", "  ")
-		if err != nil {
-			log.Fatal("Cannot create profile")
-		}
-
-		// Store into cache
-		if ok {
-			err = cache.Update(func(tx *bolt.Tx) error {
-				b, err := tx.CreateBucketIfNotExists(bucket)
-				if err != nil {
-					return err
-				}
-
-				err = b.Put(key, buffer)
-				return err
-			})
-
-			if err != nil {
-				log.Printf("Cannot store %q:%q", key, bucket)
-			} else {
-				log.Printf("Stored %q:%q", bucket, key)
-			}
-		}
+	buffer, err := json.MarshalIndent(p, "", "  ")
+	if err != nil {
+		http.Error(w, "Cannot create profile", http.StatusInternalServerError)
+		return
 	}
 
 	header := w.Header()
@@ -191,10 +148,9 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		header.Set("Content-Type", "application/json")
 	}
-	header.Set("Content-Length", strconv.Itoa(len(buffer)))
 	header.Set("Access-Control-Allow-Origin", "*")
 	header.Set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
-	w.Write(buffer)
+	http.ServeContent(w, r, "info.json", *modTime, bytes.NewReader(buffer))
 }
 
 // ViewerHandler responds with the existing templates.

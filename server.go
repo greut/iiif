@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/boltdb/bolt"
 	"github.com/golang/groupcache"
 	"github.com/gorilla/mux"
 	"log"
@@ -14,7 +13,6 @@ import (
 var port = flag.String("port", "80", "Define which TCP port to use")
 var root = flag.String("root", ".", "Define root directory")
 var host = flag.String("host", "0.0.0.0", "Define the hostname")
-var db = flag.String("cache", "cache.db", "Define the BoltDB database file")
 var templates = "templates"
 
 var openError = "libvips cannot open this file: %#v"
@@ -30,21 +28,13 @@ var multipartRangesNotSupported = "multipart ranges are not supported as of yet.
 // ContextKey is the cache key to use.
 type ContextKey string
 
-// WithBoltDB sets the context with a cache key.
-func WithBoltDB(h http.Handler, db *bolt.DB) http.Handler {
+// WithGroupCaches sets the various caches.
+func WithGroupCaches(h http.Handler, groups map[string]*groupcache.Group) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, ContextKey("cache"), db)
-		r = r.WithContext(ctx)
-		h.ServeHTTP(w, r)
-	})
-}
-
-// WithGroupCache sets the cache
-func WithGroupCache(h http.Handler, group *groupcache.Group) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, ContextKey("groupcache"), group)
+		for k, v := range groups {
+			ctx = context.WithValue(ctx, ContextKey(k), v)
+		}
 		r = r.WithContext(ctx)
 		h.ServeHTTP(w, r)
 	})
@@ -69,18 +59,11 @@ func makeHandler() http.Handler {
 	router := makeRouter()
 
 	// Caching
-	cache, err := bolt.Open(*db, 0600, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer cache.Close()
-
 	me := fmt.Sprintf("http://%s/", *host)
 	peers := groupcache.NewHTTPPool(me)
 	peers.Set(me) // TODO add any other servers here...
 
-	// Group Cache
-	var group = groupcache.NewGroup("images", 64<<20, groupcache.GetterFunc(
+	var images = groupcache.NewGroup("images", 64<<20, groupcache.GetterFunc(
 		func(ctx groupcache.Context, key string, dest groupcache.Sink) error {
 			url := key
 			data, err := downloadImage(url)
@@ -92,7 +75,23 @@ func makeHandler() http.Handler {
 		},
 	))
 
-	return WithGroupCache(WithBoltDB(router, cache), group)
+	var thumbnails = groupcache.NewGroup("thumbnails", 64<<20, groupcache.GetterFunc(
+		func(ctx groupcache.Context, key string, dest groupcache.Sink) error {
+			vars := ctx.(map[string]string)
+			// XXX _ is modTime, handle it!
+			data, _, err := resizeImage(vars, images)
+			if err != nil {
+				return err
+			}
+			dest.SetBytes(data)
+			return nil
+		},
+	))
+
+	return WithGroupCaches(router, map[string]*groupcache.Group{
+		"images":     images,
+		"thumbnails": thumbnails,
+	})
 }
 
 func main() {

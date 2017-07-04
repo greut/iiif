@@ -54,7 +54,6 @@ before_install:
 before_script:
   - >
     go get -u
-    github.com/boltdb/bolt
     github.com/gorilla/mux
     gopkg.in/h2non/bimg.v1
     github.com/golang/groupcache

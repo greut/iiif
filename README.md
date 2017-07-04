@@ -12,7 +12,6 @@ libvips is required by [bimg](https://github.com/h2non/bimg/).
 
 ```
 $ go get -u \
-         github.com/boltdb/bolt \
          github.com/golang/groupcache \
          github.com/golang/lint/golint \
          github.com/gorilla/mux \
@@ -20,7 +19,7 @@ $ go get -u \
 $ go build -o bin/iiif
 $ bin/iiif --help
 
-$ bin/iiif --host 0.0.0.0 --port 8080 --root images --cache cache.db
+$ bin/iiif --host 0.0.0.0 --port 8080 --root images
 ```
 
 ## IIIF image API 2.1
@@ -87,11 +86,6 @@ Some viewers are supporting the iiif API quiet out of the box, a good way to tes
 - [OpenSeadragon](http://openseadragon.github.io/)
 - [Leaflet-IIIF](https://github.com/mejackreed/Leaflet-IIIF)
 - [IiifViewer](https://github.com/klokantech/iiifviewer) **(not working)**
-
-## HTTP features
-
-- [Range requests](https://developer.mozilla.org/en-US/docs/Web/HTTP/Range_requests) (but not multipart)
-- [If-Modified-since](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since)
 
 ## TODO
 
