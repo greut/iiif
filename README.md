@@ -82,14 +82,15 @@ It provides meta-informations about the service. **(incomplete)**
 
 ## Viewers
 
-Some viewers are supporting the iiif API quiet out of the box, a good way to test some aspects of the API.
+Some viewers are supporting the iiif API out of the box. The following are included.
 
 - [OpenSeadragon](http://openseadragon.github.io/)
 - [Leaflet-IIIF](https://github.com/mejackreed/Leaflet-IIIF)
-- [IiifViewer](https://github.com/klokantech/iiifviewer) **(not working)**
+- [IiifViewer](https://github.com/klokantech/iiifviewer)
 
 ## TODO
 
+- Propose maxWidth, maxHeight and maxArea to prevent DOS on the server.
 - Sendfile
 
 ## Friendly projects

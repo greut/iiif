@@ -3,7 +3,7 @@
     <head>
         <meta charset=utf-8>
         <title>{{.Image}} Leaflet</title>
-        <link rel="stylesheet" type="text/css" href="/assets/leaflet/dist/leaflet.css">
+        <link rel="stylesheet" type="text/css" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css">
         <style>
 #map {height: 90vh;}
         </style>
@@ -12,13 +12,9 @@
         <div id="map"></div>
         <p>Kudos to <a href="https://github.com/mejackreed/Leaflet-IIIF">Jack Reed</a>.</p>
 
-        <pre><code>
-$ bower install leaflet-iiif
-        </code></pre>
-
-        <script src="/assets/leaflet/dist/leaflet.js"></script>
+        <script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-        <script src="/assets/leaflet-iiif/leaflet-iiif.js"></script>
+        <script src="http://mejackreed.github.io/Leaflet-IIIF/leaflet-iiif.js"></script>
         <script>
 L.map('map', {center: [0, 0], crs: L.CRS.Simple, zoom: 0})
  .addLayer(L.tileLayer.iiif('/{{.Image}}/info.json', {'quality': 'default'}))

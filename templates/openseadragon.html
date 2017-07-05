@@ -6,40 +6,29 @@
         <style>
 .openseadragon
 {
-    width:      800px;
-    height:     600px;
-    border:     1px solid black;
+    height:     90vh;
     color:      #333; /* text color for messages */
-    background-color: black;
-}
-.openseadragon.front-page {
-    height: 586px;
+    background-color: #f0f0f0;
 }
 .openseadragon-small
 {
-    width:      100px;
-    height:     80px;
-    border:     1px solid black;
+    height:     80vh;
     color:      #333; /* text color for messages */
-    background-color: black;
 }
         </style>
     </head>
     <body>
         <div id="zoom" class="openseadragon"></div>
-        <script src="/assets/openseadragon/built-openseadragon/openseadragon/openseadragon.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/2.2.1/openseadragon.min.js"></script>
         <script>
 OpenSeadragon({
     id: "zoom",
-    prefixUrl: "/assets/openseadragon/built-openseadragon/openseadragon/images/",
+    prefixUrl: "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/2.2.1/images/",
     tileSources: [
         "/{{.Image}}/info.json"
     ]
 })
         </script>
-        <p>Install OpenSeadragon first.</p>
-        <pre><code>
-$ bower install openseadragon
-        </code></pre>
+        <p>Powered by <a href="https://openseadragon.github.io/">OpenSeadragon</a>.</p>
     </body>
 </html>

@@ -4,7 +4,4 @@ images/
 pkg/
 src/
 
-bower_components
-
 init.sh
-cache.db

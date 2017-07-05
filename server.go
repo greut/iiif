@@ -43,9 +43,6 @@ func WithGroupCaches(h http.Handler, groups map[string]*groupcache.Group) http.H
 func makeRouter() http.Handler {
 	router := mux.NewRouter()
 
-	router.PathPrefix("/assets").Handler(
-		http.StripPrefix("/assets",
-			http.FileServer(http.Dir("bower_components"))))
 	router.HandleFunc("/{identifier}/info.json", InfoHandler)
 	router.HandleFunc("/{identifier}/{region}/{size}/{rotation}/{quality}.{format}", ImageHandler)
 	router.HandleFunc("/{identifier}/{viewer}", ViewerHandler)
@@ -63,7 +60,7 @@ func makeHandler() http.Handler {
 	peers := groupcache.NewHTTPPool(me)
 	peers.Set(me) // TODO add any other servers here...
 
-	var images = groupcache.NewGroup("images", 64<<20, groupcache.GetterFunc(
+	var images = groupcache.NewGroup("images", 128<<20, groupcache.GetterFunc(
 		func(ctx groupcache.Context, key string, dest groupcache.Sink) error {
 			url := key
 			data, err := downloadImage(url)
@@ -75,7 +72,7 @@ func makeHandler() http.Handler {
 		},
 	))
 
-	var thumbnails = groupcache.NewGroup("thumbnails", 64<<20, groupcache.GetterFunc(
+	var thumbnails = groupcache.NewGroup("thumbnails", 512<<20, groupcache.GetterFunc(
 		func(ctx groupcache.Context, key string, dest groupcache.Sink) error {
 			vars := ctx.(map[string]string)
 			data, modTime, err := resizeImage(vars, images)
