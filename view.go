@@ -32,8 +32,13 @@ type indexData struct {
 	URLs  indexURLList
 }
 
-// IndexHandler responds to the service homepage.
+// IndexHandler shows the homepage.
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/demo", 301)
+}
+
+// DemoHandler responds with the demo page.
+func DemoHandler(w http.ResponseWriter, r *http.Request) {
 	files, _ := ioutil.ReadDir(*root)
 
 	yoan, _ := url.Parse("http://dosimple.ch/yoan.png")
@@ -48,7 +53,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	t, _ := template.ParseFiles("templates/index.html")
+	t, _ := template.ParseFiles("templates/demo.html")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	t.Execute(w, &p)
 }
@@ -173,6 +178,7 @@ func ViewerHandler(w http.ResponseWriter, r *http.Request) {
 	t, err := template.ParseFiles(tpl)
 	if err != nil {
 		log.Printf("Template not found. %#v", err.Error())
+		http.NotFound(w, r)
 		return
 	}
 

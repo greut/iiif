@@ -11,7 +11,7 @@ import (
 )
 
 var port = flag.String("port", "80", "Define which TCP port to use")
-var root = flag.String("root", ".", "Define root directory")
+var root = flag.String("root", "public", "Define root directory")
 var host = flag.String("host", "0.0.0.0", "Define the hostname")
 var templates = "templates"
 
@@ -43,11 +43,12 @@ func WithGroupCaches(h http.Handler, groups map[string]*groupcache.Group) http.H
 func makeRouter() http.Handler {
 	router := mux.NewRouter()
 
+	router.HandleFunc("/", IndexHandler)
+	router.HandleFunc("/demo", DemoHandler)
 	router.HandleFunc("/{identifier}/info.json", InfoHandler)
 	router.HandleFunc("/{identifier}/{region}/{size}/{rotation}/{quality}.{format}", ImageHandler)
 	router.HandleFunc("/{identifier}/{viewer}", ViewerHandler)
 	router.HandleFunc("/{identifier}", RedirectHandler)
-	router.HandleFunc("/", IndexHandler)
 
 	return router
 }
