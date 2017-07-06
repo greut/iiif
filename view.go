@@ -17,24 +17,63 @@ import (
 	"strings"
 )
 
-// IndexURL contains a file URL and its base64 encoded version.
-type indexURL struct {
+// encodedURL contains a file URL and its base64 encoded version.
+type encodedURL struct {
 	URL     *url.URL
 	Encoded string
 }
 
-// IndexURLList contains a list of IndexURL.
-type indexURLList []*indexURL
+type titledURL struct {
+	URL   string
+	Title string
+}
+
+// urlList contains a list of IndexURL.
+type urlList []*encodedURL
 
 // IndexData contains the data for the index page.
-type indexData struct {
+type demoData struct {
 	Files []os.FileInfo
-	URLs  indexURLList
+	URLs  urlList
+}
+
+var fns = template.FuncMap{
+	"plus1": func(x int) int {
+		return x + 1
+	},
 }
 
 // IndexHandler shows the homepage.
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/demo", 301)
+	p := struct {
+		ImagesURL []titledURL
+		Viewers   []titledURL
+	}{
+		ImagesURL: []titledURL{
+			{
+				"https://www.nasa.gov/sites/default/files/thumbnails/image/blacksea_amo_2017149_lrg.jpg",
+				"NASA view of the Black Sea",
+			},
+			{
+				"http://futurist.se/gldt/wp-content/uploads/12.10/gldt1210.png",
+				"Linux distributions as of 2010",
+			},
+			{
+				"http://www.acprail.com/images/stories/maps/Swiss_map.jpg",
+				"Swiss trains map",
+			},
+		},
+		Viewers: []titledURL{
+			{"openseadragon.html", "OpenSeadragon"},
+			{"leaflet.html", "Leaflet-IIIF"},
+			{"iiifviewer.html", "IiifViewer"},
+			{"info.json", "JSON-LD profile"},
+		},
+	}
+
+	t := template.Must(template.New("index.html").Funcs(fns).ParseFiles("templates/index.html"))
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	t.Execute(w, p)
 }
 
 // DemoHandler responds with the demo page.
@@ -43,9 +82,9 @@ func DemoHandler(w http.ResponseWriter, r *http.Request) {
 
 	yoan, _ := url.Parse("http://dosimple.ch/yoan.png")
 
-	p := indexData{
+	p := demoData{
 		Files: files,
-		URLs: indexURLList{
+		URLs: urlList{
 			{
 				yoan,
 				base64.StdEncoding.EncodeToString([]byte(yoan.String())),
@@ -53,7 +92,7 @@ func DemoHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	t, _ := template.ParseFiles("templates/demo.html")
+	t := template.Must(template.ParseFiles("templates/demo.html"))
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	t.Execute(w, &p)
 }

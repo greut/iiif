@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<meta charset=utf-8>
+<title>greut/iiif</title>
+<meta name=viewport content="width=device-width,minimum-scale=1,maximum-scale=1">
+<style>
+html, body { width: 100%; height: 100%; margin: 0; padding: 0 }
+body {color:#222;font:14px sans-serif; }
+ul { padding: 0 }
+li { list-style: none; }
+input[type=text], button { width: 100% }
+body { display: flex; flex-direction: column; height: 100% }
+main { flex: 1 0 auto; width: 100%; margin: 2em auto; }
+section { margin: 1em }
+@media (min-width: 40em) {
+    main {
+        width: 40em;
+    }
+}
+footer { flex: none; color: #999; text-align: right; padding: 2em 1em; }
+</style>
+
+
+<main>
+<section>
+<h1>IIIF server</h1>
+<p>
+The <a href="http://iiif.io/">International Image Interoperability Framework®</a>
+(IIIF, pronounced “Triple-Eye-Eff”) describes an API to ask for images
+thumbnails, sub regions, etc. Here is an implementation of that API powered by
+<a href="https://golang.org/">Go</a> and
+<a href="https://jcupitt.github.io/libvips/">libvips</a>.
+</p>
+<p>
+If you have any questions, <a href="mailto:yoan@dosimple.ch">ping me</a>.
+</p>
+<form>
+    <h2>Demo</h2>
+    <p>Pick an existing picture:</p>
+    <ul>
+        {{ range .ImagesURL }}
+        <li>
+            <label>
+                <input type=radio name=selection value="{{ .URL }}">&nbsp;{{ .Title }}
+            </label>
+            (<a href="{{ .URL }}">visit</a>)
+        {{ end }}
+    </ul>
+    <p>
+        or
+        <label for=path>Image (Public URL):</label>
+        <input type=text id=path>
+    </p>
+    <p>
+        <button type="submit">Show</button>
+    </p>
+</form>
+</section>
+</main>
+<footer>
+    2017 © <a href="http://dosimple.ch/">doSimple</a>.
+    Hosted on <a href="https://m.do.co/c/caacdc811f19">DigitalOcean</a>.
+</footer>
+
+<a href="https://github.com/greut/iiif"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/e7bbb0521b397edbd5fe43e7f760759336b5e05f/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677265656e5f3030373230302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_green_007200.png" alt="github"></a>
+
+<script>
+var f = document.querySelector("form")
+
+f.addEventListener("submit", function(event) {
+    event.preventDefault()
+
+    var url = f.path.value || f.selection.value
+
+    if (url) {
+        if (f.nextSibling.nodeName == "DIV") {
+            f.parentNode.removeChild(f.nextSibling)
+        }
+
+        var identifier = btoa(unescape(encodeURIComponent(url)))
+        var div = document.createElement("div")
+        var p = document.createElement("p")
+        var a = document.createElement("a")
+        var title = document.createElement("h2")
+        var img = new Image()
+        img.src = "/" + identifier + "/square/" + f.clientWidth + ",/0/default.jpg"
+        img.width = f.clientWidth
+        img.height = f.clientWidth
+        img.alt = url
+
+        title.appendChild(document.createTextNode("Result"))
+        p.appendChild(document.createTextNode("View using: "))
+
+        {{ $n := len .Viewers }}
+        {{range $i, $v := .Viewers }}
+            var l = a.cloneNode(true)
+            l.href = "/" + identifier + "/{{ $v.URL }}"
+            l.appendChild(document.createTextNode("{{ $v.Title }}"))
+            p.appendChild(l)
+            {{ if eq (plus1 $i) $n }}
+                p.appendChild(document.createTextNode("."))
+            {{ else }}
+                p.appendChild(document.createTextNode(", "))
+            {{ end }}
+        {{ end }}
+
+        div.appendChild(title)
+        div.appendChild(p)
+        div.appendChild(img)
+
+        f.parentNode.insertBefore(div, f.nextSibling)
+    }
+})
+</script>
