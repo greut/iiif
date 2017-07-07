@@ -164,6 +164,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 					"regionByPct",
 					"regionByPx",
 					"regionSquare",
+					"regionSmart", // not part of IIIF
 					//"rotationArbitrary",
 					"rotationBy90s",
 					"sizeAboveFull",

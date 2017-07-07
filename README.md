@@ -38,6 +38,7 @@ The API specifications can be found on [iiif.io](http://iiif.io/api/image/2.1/in
 - `square`: a square area in the picture (centered)
 - `x,y,w,h`: extract the specified region (as pixels)
 - `pct:x,y,w,h`: extract the specified region (as percentages)
+- `smart`: attempt to select the center of interest **(subject to change as it is not part of IIIF)**
 
 ### [Size](http://iiif.io/api/image/2.1/index.html#size)
 
