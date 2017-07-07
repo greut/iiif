@@ -44,8 +44,12 @@ func TestOutputSizes(t *testing.T) {
 		{"/lena.jpg/full/max/0/default.png", 1084, 2318},
 		{"/lena.jpg/full/max/90/default.png", 2318, 1084},
 		{"/lena.jpg/full/max/!90/default.png", 2318, 1084},
+		{"/lena.jpg/full/max/180/default.png", 1084, 2318},
+		{"/lena.jpg/full/max/!180/default.png", 1084, 2318},
+		{"/lena.jpg/full/max/270/default.png", 2318, 1084},
+		{"/lena.jpg/full/max/!270/default.png", 2318, 1084},
 		{"/lena.jpg/full/400,300/0/default.png", 400, 300},
-		//{"/lena.jpg/full/!400,300/0/default.png", 140, 300},
+		{"/lena.jpg/full/!400,300/0/default.png", 187, 300},
 		{"/lena.jpg/full/pct:50/0/default.png", 542, 1159},
 		{"/lena.jpg/square/max/0/default.png", 1084, 1084},
 		{"/lena.jpg/square/500,500/0/default.png", 500, 500},
@@ -58,7 +62,6 @@ func TestOutputSizes(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		log.Println(test.url)
 		url := ts.URL + test.url
 		resp, err := http.Get(url)
 		if err != nil {

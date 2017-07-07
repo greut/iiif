@@ -18,7 +18,6 @@ import (
 )
 
 func resizeImage(vars map[string]string, cache *groupcache.Group) ([]byte, *time.Time, error) {
-	quality := vars["quality"]
 	identifier := vars["identifier"]
 	format := vars["format"]
 
@@ -75,20 +74,9 @@ func resizeImage(vars map[string]string, cache *groupcache.Group) ([]byte, *time
 
 	// Quality
 	// -------
-	// color
-	// gray
-	// bitonal (not supported)
-	// default
-	// native (IIIF 1.0)
-	if quality == "color" || quality == "default" || quality == "native" {
-		// do nothing.
-	} else if quality == "gray" {
-		options.Interpretation = bimg.InterpretationGREY16
-	} else if quality == "bitonal" {
-		options.Interpretation = bimg.InterpretationBW
-	} else {
-		message := fmt.Sprintf(qualityError, quality)
-		return nil, nil, HTTPError{http.StatusBadRequest, message}
+	err = handleQuality(vars["quality"], &options)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	_, err = image.Process(options)
@@ -347,8 +335,13 @@ func handleSize(size string, opts *bimg.Options) error {
 				opts.Height = int(h)
 
 				if best {
-					opts.Crop = false
-					opts.Enlarge = true
+					inRatio := float64(opts.AreaWidth) / float64(opts.AreaHeight)
+					outRatio := float64(opts.Width) / float64(opts.Height)
+					if inRatio < outRatio {
+						opts.Width = int(float64(opts.Width) * inRatio)
+					} else {
+						opts.Height = int(float64(opts.Height) / inRatio)
+					}
 				}
 			} else if errW != nil {
 				ratio := float64(opts.Height) / float64(opts.Width)
@@ -361,5 +354,25 @@ func handleSize(size string, opts *bimg.Options) error {
 			}
 		}
 	}
+	return nil
+}
+
+func handleQuality(quality string, opts *bimg.Options) error {
+	// color
+	// gray
+	// bitonal (not supported)
+	// default
+	// native (IIIF 1.0)
+	if quality == "color" || quality == "default" || quality == "native" {
+		// do nothing.
+	} else if quality == "gray" {
+		opts.Interpretation = bimg.InterpretationGREY16
+	} else if quality == "bitonal" {
+		opts.Interpretation = bimg.InterpretationBW
+	} else {
+		message := fmt.Sprintf(qualityError, quality)
+		return HTTPError{http.StatusBadRequest, message}
+	}
+
 	return nil
 }
