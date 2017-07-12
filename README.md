@@ -21,6 +21,8 @@ $ go build -o bin/iiif
 $ bin/iiif --help
 
 $ bin/iiif --host 0.0.0.0 --port 8080 --root images
+
+$ DEBUG=bimg go test -v
 ```
 
 ## IIIF image API 2.1

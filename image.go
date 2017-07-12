@@ -58,16 +58,17 @@ func resizeImage(vars map[string]string, cache *groupcache.Group) ([]byte, *time
 		Type:   bimgType,
 	}
 
-	// Region
-	// ------
-	err = handleRegion(vars["region"], &options)
+	// Size
+	// ----
+	// Bimg handles the zooming before the cropping
+	err = handleSize(vars["size"], &options)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// Size
-	// ----
-	err = handleSize(vars["size"], &options)
+	// Region
+	// ------
+	err = handleRegion(vars["region"], size, &options)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -222,85 +223,6 @@ func downloadImage(url string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func handleRegion(region string, opts *bimg.Options) error {
-	// full
-	// square
-	// x,y,w,h (in pixels)
-	// pct:x,y,w,h (in percents)
-	// smart (extension)
-	opts.AreaWidth = opts.Width
-	opts.AreaHeight = opts.Height
-	opts.Top = 0
-	opts.Left = 0
-
-	if region != "full" {
-		if region == "square" {
-			if opts.Width < opts.Height {
-				opts.Height = opts.Width
-			} else {
-				opts.Width = opts.Height
-			}
-			opts.Crop = true
-			opts.Force = false
-			opts.Gravity = bimg.GravityCentre
-		} else if region == "smart" {
-			opts.Crop = true
-			opts.Gravity = bimg.GravitySmart
-			opts.SmartCrop = true
-		} else {
-			if !strings.HasPrefix(region, "pct:") {
-				sizes := strings.Split(region, ",")
-				if len(sizes) != 4 {
-					message := fmt.Sprintf(regionError, region)
-					return HTTPError{http.StatusBadRequest, message}
-				}
-				x, errX := strconv.ParseInt(sizes[0], 10, 64)
-				y, errY := strconv.ParseInt(sizes[1], 10, 64)
-				w, errW := strconv.ParseInt(sizes[2], 10, 64)
-				h, errH := strconv.ParseInt(sizes[3], 10, 64)
-
-				if errX != nil || errY != nil || errW != nil || errH != nil {
-					message := fmt.Sprintf(regionError, region)
-					return HTTPError{http.StatusBadRequest, message}
-				}
-
-				opts.AreaWidth = int(w)
-				opts.AreaHeight = int(h)
-				opts.Left = int(x)
-				opts.Top = int(y)
-			} else {
-				sizes := strings.Split(region[4:], ",")
-				if len(sizes) != 4 {
-					message := fmt.Sprintf(regionError, region)
-					return HTTPError{http.StatusBadRequest, message}
-				}
-				x, errX := strconv.ParseFloat(sizes[0], 64)
-				y, errY := strconv.ParseFloat(sizes[1], 64)
-				w, errW := strconv.ParseFloat(sizes[2], 64)
-				h, errH := strconv.ParseFloat(sizes[3], 64)
-
-				if errX != nil || errY != nil || errW != nil || errH != nil {
-					message := fmt.Sprintf(regionError, region)
-					return HTTPError{http.StatusBadRequest, message}
-				}
-
-				opts.AreaWidth = int(float64(opts.Width) * w / 100.)
-				opts.AreaHeight = int(float64(opts.Height) * h / 100.)
-				opts.Left = int(float64(opts.Width) * x / 100.)
-				opts.Top = int(float64(opts.Height) * y / 100.)
-			}
-		}
-
-		// Hack: libvips does strange things here.
-		// * https://github.com/h2non/bimg/issues/60
-		// * https://github.com/h2non/bimg/commit/b7eaa00f104a8eab49eedf49d75b11308df95f7a
-		if opts.Top <= 0 && opts.Left == 0 {
-			opts.Top = -1
-		}
-	}
-	return nil
-}
-
 func handleSize(size string, opts *bimg.Options) error {
 	// max, full
 	// w,h (deform)
@@ -308,7 +230,6 @@ func handleSize(size string, opts *bimg.Options) error {
 	// w, (force width)
 	// ,h (force height)
 	if size != "max" && size != "full" {
-		opts.Crop = true
 		if strings.HasPrefix(size, "pct:") {
 			pct, err := strconv.ParseFloat(size[4:], 64)
 			if err != nil {
@@ -335,23 +256,112 @@ func handleSize(size string, opts *bimg.Options) error {
 				opts.Height = int(h)
 
 				if best {
-					inRatio := float64(opts.AreaWidth) / float64(opts.AreaHeight)
-					outRatio := float64(opts.Width) / float64(opts.Height)
-					if inRatio < outRatio {
-						opts.Width = int(float64(opts.Width) * inRatio)
-					} else {
-						opts.Height = int(float64(opts.Height) / inRatio)
-					}
+					opts.Enlarge = true
+				} else {
+					opts.Force = true
 				}
-			} else if errW != nil {
-				ratio := float64(opts.Height) / float64(opts.Width)
-				opts.Width = int(h)
-				opts.Height = int(float64(h) * ratio)
+			} else if errH != nil {
+				opts.Width = int(wi)
+				opts.Height = 0
 			} else {
-				ratio := float64(opts.Width) / float64(opts.Height)
-				opts.Height = int(wi)
-				opts.Width = int(float64(wi) * ratio)
+				opts.Width = 0
+				opts.Height = int(h)
 			}
+		}
+	}
+	return nil
+}
+
+func handleRegion(region string, size bimg.ImageSize, opts *bimg.Options) error {
+	// full
+	// square
+	// x,y,w,h (in pixels)
+	// pct:x,y,w,h (in percents)
+	// smart (extension)
+	if region != "full" {
+		if region == "square" {
+			if opts.Height == 0 {
+				opts.Height = opts.Width
+			} else if opts.Width == 0 {
+				opts.Width = opts.Height
+			} else {
+				if opts.Width < opts.Height {
+					opts.Height = opts.Width
+				} else {
+					opts.Width = opts.Height
+				}
+			}
+			opts.Crop = true
+			opts.Force = false
+			opts.Gravity = bimg.GravityCentre
+		} else if region == "smart" {
+			opts.Crop = true
+			opts.Force = false
+			opts.Gravity = bimg.GravitySmart
+		} else {
+			isPercent := strings.HasPrefix(region, "pct:")
+			var sizes []string
+			if isPercent {
+				sizes = strings.Split(region[4:], ",")
+			} else {
+				sizes = strings.Split(region, ",")
+			}
+
+			if len(sizes) != 4 {
+				message := fmt.Sprintf(regionError, region)
+				return HTTPError{http.StatusBadRequest, message}
+			}
+
+			var x, y, w, h int64
+			var errX, errY, errW, errH error
+
+			if isPercent {
+				var xf, yf, wf, hf float64
+
+				xf, errX = strconv.ParseFloat(sizes[0], 64)
+				yf, errY = strconv.ParseFloat(sizes[1], 64)
+				wf, errW = strconv.ParseFloat(sizes[2], 64)
+				hf, errH = strconv.ParseFloat(sizes[3], 64)
+
+				x = int64(float64(size.Width) * xf / 100.)
+				y = int64(float64(size.Height) * yf / 100.)
+				w = int64(float64(size.Width) * wf / 100.)
+				h = int64(float64(size.Height) * hf / 100.)
+			} else {
+				x, errX = strconv.ParseInt(sizes[0], 10, 64)
+				y, errY = strconv.ParseInt(sizes[1], 10, 64)
+				w, errW = strconv.ParseInt(sizes[2], 10, 64)
+				h, errH = strconv.ParseInt(sizes[3], 10, 64)
+			}
+
+			if errX != nil || errY != nil || errW != nil || errH != nil ||
+				int(x+w) > size.Width || int(y+h) > size.Height {
+				message := fmt.Sprintf(regionError, region)
+				return HTTPError{http.StatusBadRequest, message}
+			}
+
+			// Fix missing value, if it were the case.
+			if opts.Width == 0 || opts.Height == 0 {
+				r := float64(w) / float64(h)
+				if opts.Width == 0 {
+					opts.Width = int(float64(opts.Height) * r)
+				} else {
+					opts.Height = int(float64(opts.Width) / r)
+				}
+			}
+
+			// Calculate the new width/height...
+			rW := float64(w) / float64(opts.Width)
+			rH := float64(h) / float64(opts.Height)
+
+			opts.AreaWidth = opts.Width
+			opts.AreaHeight = opts.Height
+
+			opts.Left = int(float64(x) / rW)
+			opts.Top = int(float64(y) / rH)
+
+			opts.Width = int(float64(size.Width) / rW)
+			opts.Height = int(float64(size.Height) / rH)
 		}
 	}
 	return nil
