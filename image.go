@@ -237,6 +237,7 @@ func handleSize(size string, opts *bimg.Options) error {
 				return HTTPError{http.StatusBadRequest, message}
 			}
 
+			// XXX fix me, this 50% of the region...
 			opts.Width = int(pct / 100 * float64(opts.Width))
 			opts.Height = int(pct / 100 * float64(opts.Height))
 		} else {

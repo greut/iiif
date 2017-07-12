@@ -56,14 +56,15 @@ func TestOutputSizes(t *testing.T) {
 		{"/lena.jpg/square/500,/0/default.png", 500, 500},
 		{"/lena.jpg/square/,500/0/default.png", 500, 500},
 		{"/lena.jpg/smart/500,500/0/default.png", 500, 500},
-		//{"/lena.jpg/84,318,1000,2000/max/0/default.png", 1000, 2000},
+		{"/lena.jpg/84,318,1000,2000/max/0/default.png", 1000, 2000},
 		{"/lena.jpg/84,318,1000,2000/500,1000/0/default.png", 500, 1000},
 		{"/lena.jpg/84,318,1000,2000/500,/0/default.png", 500, 1000},
 		{"/lena.jpg/84,318,1000,2000/,1000/0/default.png", 500, 1000},
-		//{"/lena.jpg/pct:10,10,80,80/max/0/default.png", 867, 1854},
+		{"/lena.jpg/pct:10,10,80,80/max/0/default.png", 867, 1854},
 		{"/lena.jpg/0,0,1084,2318/256,/0/default.png", 256, 547},
 		{"/lena.jpg/0,0,1084,2318/512,/0/default.png", 512, 1094},
 		{"/lena.jpg/542,1159,542,1159/512,/0/default.png", 512, 1094},
+		{"/lena.jpg/84,313,1000,2000/pct:50/0/default.png", 500, 1000},
 	}
 
 	for _, test := range tests {
