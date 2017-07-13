@@ -8,7 +8,11 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+
+	d "github.com/tj/go-debug"
 )
+
+var debug = d.Debug("iiif")
 
 var port = flag.String("port", "80", "Define which TCP port to use")
 var root = flag.String("root", "public", "Define root directory")
@@ -68,6 +72,7 @@ func makeHandler() http.Handler {
 			if err != nil {
 				return err
 			}
+			debug("Caching %s", key)
 			dest.SetBytes(data)
 			return nil
 		},
@@ -81,6 +86,7 @@ func makeHandler() http.Handler {
 				return err
 			}
 
+			debug("Caching %s", key)
 			binTime, _ := modTime.MarshalBinary()
 			dest.SetProto(&ImageWithModTime{binTime, data})
 			return nil

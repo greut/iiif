@@ -16,13 +16,14 @@ $ go get -u \
          github.com/golang/groupcache \
          github.com/golang/lint/golint \
          github.com/gorilla/mux \
+         github.com/tj/go-debug \
          gopkg.in/h2non/bimg.v1
 $ go build -o bin/iiif
 $ bin/iiif --help
 
 $ bin/iiif --host 0.0.0.0 --port 8080 --root images
 
-$ DEBUG=bimg go test -v
+$ DEBUG=iiif,bimg go test -v
 ```
 
 ## IIIF image API 2.1

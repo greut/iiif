@@ -183,7 +183,7 @@ func openImage(identifier string, cache *groupcache.Group) (*bimg.Image, *time.T
 			if err != nil {
 				return nil, nil, err
 			}
-			log.Printf("From cache %v\n", sURL)
+			debug("From cache %v", sURL)
 		} else {
 			buffer, err = downloadImage(sURL)
 			if err != nil {
@@ -193,7 +193,7 @@ func openImage(identifier string, cache *groupcache.Group) (*bimg.Image, *time.T
 	} else {
 		buffer, err = bimg.Read(filename)
 		if err != nil {
-			log.Printf("Cannot open file %#v: %#v", filename, err.Error())
+			debug("Cannot open file %#v: %#v", filename, err.Error())
 			return nil, nil, err
 		}
 
@@ -209,11 +209,11 @@ func openImage(identifier string, cache *groupcache.Group) (*bimg.Image, *time.T
 }
 
 func downloadImage(url string) ([]byte, error) {
-	log.Printf("downloading %v\n", url)
+	debug("downloading %v\n", url)
 
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Printf("Download error: %q : %#v.", url, err)
+		debug("Download error: %q : %#v.", url, err)
 		return nil, err
 	}
 	defer resp.Body.Close()

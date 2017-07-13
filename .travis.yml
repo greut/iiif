@@ -60,6 +60,7 @@ before_script:
     github.com/golang/groupcache
     github.com/golang/lint/golint
     github.com/mattn/goveralls
+    github.com/tj/go-debug
 
 script:
   - test `gofmt -s -d . | tee -a /dev/fd/2 | wc -l` -eq 0
