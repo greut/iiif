@@ -68,7 +68,7 @@ func TestOutputSizes(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		debug("url: %v", test.url)
+		debug("%s ~> %d x %d", test.url, test.width, test.height)
 		url := ts.URL + test.url
 		resp, err := http.Get(url)
 		if err != nil {

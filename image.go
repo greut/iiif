@@ -58,17 +58,10 @@ func resizeImage(vars map[string]string, cache *groupcache.Group) ([]byte, *time
 		Type:   bimgType,
 	}
 
-	// Size
+	// Size & Region
 	// ----
 	// Bimg handles the zooming before the cropping
-	err = handleSize(vars["size"], &options)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Region
-	// ------
-	err = handleRegion(vars["region"], size, &options)
+	err = handleSizeAndRegion(vars["size"], vars["region"], &options)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -223,38 +216,48 @@ func downloadImage(url string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func handleSize(size string, opts *bimg.Options) error {
+func handleSizeAndRegion(size string, region string, opts *bimg.Options) error {
+	// Size
+	// ----
 	// max, full
 	// w,h (deform)
 	// !w,h (best fit within size)
 	// w, (force width)
 	// ,h (force height)
+
+	// Sizes
+	var width int
+	var height int
+	var pct float64
+
+	best := false
+
 	if size != "max" && size != "full" {
 		if strings.HasPrefix(size, "pct:") {
-			pct, err := strconv.ParseFloat(size[4:], 64)
-			if err != nil {
+			var err error
+			pct, err = strconv.ParseFloat(size[4:], 64)
+			if err != nil || pct == 0 {
+				message := fmt.Sprintf(sizeError, size)
+				return HTTPError{http.StatusBadRequest, message}
+			}
+		} else {
+			best = strings.HasPrefix(size, "!")
+			sizes := strings.Split(strings.Trim(size, "!"), ",")
+
+			if len(sizes) != 2 {
 				message := fmt.Sprintf(sizeError, size)
 				return HTTPError{http.StatusBadRequest, message}
 			}
 
-			// XXX fix me, this 50% of the region...
-			opts.Width = int(pct / 100 * float64(opts.Width))
-			opts.Height = int(pct / 100 * float64(opts.Height))
-		} else {
-			best := strings.HasPrefix(size, "!")
-			size = strings.Trim(size, "!")
-
-			sizes := strings.Split(size, ",")
-
-			wi, errW := strconv.ParseInt(sizes[0], 10, 64)
+			w, errW := strconv.ParseInt(sizes[0], 10, 64)
 			h, errH := strconv.ParseInt(sizes[1], 10, 64)
 
-			if errW != nil && errH != nil {
+			if errW != nil && errH != nil || (w == 0 && h == 0) {
 				message := fmt.Sprintf(sizeError, size)
 				return HTTPError{http.StatusBadRequest, message}
 			} else if errW == nil && errH == nil {
-				opts.Width = int(wi)
-				opts.Height = int(h)
+				width = int(w)
+				height = int(h)
 
 				if best {
 					opts.Enlarge = true
@@ -262,109 +265,138 @@ func handleSize(size string, opts *bimg.Options) error {
 					opts.Force = true
 				}
 			} else if errH != nil {
-				opts.Width = int(wi)
-				opts.Height = 0
+				width = int(w)
 			} else {
-				opts.Width = 0
-				opts.Height = int(h)
+				height = int(h)
 			}
 		}
+		// XXX Handle max w.r.t. the configuration (anti-DOS)
 	}
-	return nil
-}
 
-func handleRegion(region string, size bimg.ImageSize, opts *bimg.Options) error {
+	debug("Input sizes: %v x %v / %v (best: %v)", width, height, pct, best)
+
+	// Region
+	// ------
 	// full
 	// square
 	// x,y,w,h (in pixels)
 	// pct:x,y,w,h (in percents)
 	// smart (extension)
-	if region != "full" {
-		if region == "square" {
-			if opts.Height == 0 {
-				opts.Height = opts.Width
-			} else if opts.Width == 0 {
-				opts.Width = opts.Height
-			} else {
-				if opts.Width < opts.Height {
-					opts.Height = opts.Width
-				} else {
-					opts.Width = opts.Height
-				}
-			}
-			opts.Crop = true
-			opts.Force = false
-			opts.Gravity = bimg.GravityCentre
-		} else if region == "smart" {
-			opts.Crop = true
-			opts.Force = false
-			opts.Gravity = bimg.GravitySmart
-		} else {
-			isPercent := strings.HasPrefix(region, "pct:")
-			var sizes []string
-			if isPercent {
-				sizes = strings.Split(region[4:], ",")
-			} else {
-				sizes = strings.Split(region, ",")
-			}
-
-			if len(sizes) != 4 {
-				message := fmt.Sprintf(regionError, region)
-				return HTTPError{http.StatusBadRequest, message}
-			}
-
-			var x, y, w, h int64
-			var errX, errY, errW, errH error
-
-			if isPercent {
-				var xf, yf, wf, hf float64
-
-				xf, errX = strconv.ParseFloat(sizes[0], 64)
-				yf, errY = strconv.ParseFloat(sizes[1], 64)
-				wf, errW = strconv.ParseFloat(sizes[2], 64)
-				hf, errH = strconv.ParseFloat(sizes[3], 64)
-
-				x = int64(float64(size.Width) * xf / 100.)
-				y = int64(float64(size.Height) * yf / 100.)
-				w = int64(float64(size.Width) * wf / 100.)
-				h = int64(float64(size.Height) * hf / 100.)
-			} else {
-				x, errX = strconv.ParseInt(sizes[0], 10, 64)
-				y, errY = strconv.ParseInt(sizes[1], 10, 64)
-				w, errW = strconv.ParseInt(sizes[2], 10, 64)
-				h, errH = strconv.ParseInt(sizes[3], 10, 64)
-			}
-
-			if errX != nil || errY != nil || errW != nil || errH != nil ||
-				int(x+w) > size.Width || int(y+h) > size.Height {
-				message := fmt.Sprintf(regionError, region)
-				return HTTPError{http.StatusBadRequest, message}
-			}
-
-			// Fix missing value, if it were the case.
-			if opts.Width == 0 || opts.Height == 0 {
-				r := float64(w) / float64(h)
-				if opts.Width == 0 {
-					opts.Width = int(float64(opts.Height) * r)
-				} else {
-					opts.Height = int(float64(opts.Width) / r)
-				}
-			}
-
-			// Calculate the new width/height...
-			rW := float64(w) / float64(opts.Width)
-			rH := float64(h) / float64(opts.Height)
-
-			opts.AreaWidth = opts.Width
-			opts.AreaHeight = opts.Height
-
-			opts.Left = int(float64(x) / rW)
-			opts.Top = int(float64(y) / rH)
-
-			opts.Width = int(float64(size.Width) / rW)
-			opts.Height = int(float64(size.Height) / rH)
+	if region == "full" {
+		if pct != 0 {
+			opts.Width = int(float64(opts.Width) / 100. * pct)
+			opts.Height = int(float64(opts.Height) / 100. * pct)
+			debug("pct %v x %v", opts.Width, opts.Height)
+		} else if width != 0 || height != 0 {
+			opts.Width = width
+			opts.Height = height
 		}
+	} else if region == "square" || region == "smart" {
+		if width == 0 && height == 0 {
+			width = opts.Width
+			height = opts.Height
+		}
+
+		if region == "square" {
+			if height == 0 {
+				height = width
+			} else if width == 0 {
+				width = height
+			} else {
+				if width < height {
+					height = width
+				} else {
+					width = height
+				}
+			}
+			opts.Gravity = bimg.GravityCentre
+		} else {
+			opts.Gravity = bimg.GravitySmart
+		}
+
+		opts.Width = width
+		opts.Height = height
+		opts.Crop = true
+		opts.Force = false
+	} else {
+		isPercent := strings.HasPrefix(region, "pct:")
+		var sizes []string
+		if isPercent {
+			sizes = strings.Split(region[4:], ",")
+		} else {
+			sizes = strings.Split(region, ",")
+		}
+
+		if len(sizes) != 4 {
+			message := fmt.Sprintf(regionError, region)
+			return HTTPError{http.StatusBadRequest, message}
+		}
+
+		var x, y, w, h int64
+		var errX, errY, errW, errH error
+
+		if isPercent {
+			var xf, yf, wf, hf float64
+
+			xf, errX = strconv.ParseFloat(sizes[0], 64)
+			yf, errY = strconv.ParseFloat(sizes[1], 64)
+			wf, errW = strconv.ParseFloat(sizes[2], 64)
+			hf, errH = strconv.ParseFloat(sizes[3], 64)
+
+			x = int64(float64(opts.Width) * xf / 100.)
+			y = int64(float64(opts.Height) * yf / 100.)
+			w = int64(float64(opts.Width) * wf / 100.)
+			h = int64(float64(opts.Height) * hf / 100.)
+		} else {
+			x, errX = strconv.ParseInt(sizes[0], 10, 64)
+			y, errY = strconv.ParseInt(sizes[1], 10, 64)
+			w, errW = strconv.ParseInt(sizes[2], 10, 64)
+			h, errH = strconv.ParseInt(sizes[3], 10, 64)
+		}
+
+		debug("Crop area: %v; %v (%v x %v)", x, y, w, h)
+
+		if errX != nil || errY != nil || errW != nil || errH != nil ||
+			int(x+w) > opts.Width || int(y+h) > opts.Height {
+			message := fmt.Sprintf(regionError, region)
+			return HTTPError{http.StatusBadRequest, message}
+		}
+
+		if width == 0 || height == 0 {
+			if width == 0 && height == 0 {
+				if pct == 0 {
+					width = int(w)
+					height = int(h)
+				} else {
+					width = int(float64(w) / 100 * pct)
+					height = int(float64(h) / 100 * pct)
+				}
+			} else {
+				r := float64(w) / float64(h)
+				if width == 0 {
+					width = int(float64(height) * r)
+				} else {
+					height = int(float64(width) / r)
+				}
+			}
+		}
+
+		debug("Output size : %v x %v", width, height)
+
+		// Calculate the new width/height...
+		rW := float64(w) / float64(width)
+		rH := float64(h) / float64(height)
+
+		opts.AreaWidth = width
+		opts.AreaHeight = height
+
+		opts.Left = int(float64(x) / rW)
+		opts.Top = int(float64(y) / rH)
+
+		opts.Width = int(float64(opts.Width) / rW)
+		opts.Height = int(float64(opts.Height) / rH)
 	}
+
 	return nil
 }
 
