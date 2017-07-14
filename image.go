@@ -7,7 +7,6 @@ import (
 	"github.com/golang/groupcache"
 	"github.com/gorilla/mux"
 	"gopkg.in/h2non/bimg.v1"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -149,6 +148,12 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filename := fmt.Sprintf("%v.%v", quality, format)
+
+	_, present := r.URL.Query()["dl"]
+	if present {
+		w.Header().Set("Content-Disposition", fmt.Sprintf("Attachement; filename=%s", filename))
+	}
+
 	http.ServeContent(w, r, filename, modTime, bytes.NewReader(buffer))
 }
 
@@ -172,7 +177,7 @@ func openImage(identifier string, cache *groupcache.Group) (*bimg.Image, *time.T
 		} else {
 			url, err := base64.StdEncoding.DecodeString(identifier)
 			if err != nil {
-				log.Printf("Not a base64 encoded URL either.")
+				debug("Not a base64 encoded URL either.")
 				return nil, nil, err
 			}
 			sURL = string(url)

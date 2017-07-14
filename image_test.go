@@ -22,12 +22,35 @@ func TestAcceptRanges(t *testing.T) {
 	defer resp.Body.Close()
 
 	if status := resp.StatusCode; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+		t.Errorf("handler returned wrong status code: got %#v want %#v", status, http.StatusOK)
 		return
 	}
 
 	if acceptRanges := resp.Header.Get("Accept-Ranges"); acceptRanges != "bytes" {
-		t.Errorf("handler should accept bytes ranges: got %v want bytes", acceptRanges)
+		t.Errorf("handler should accept bytes ranges: got %#v want \"bytes\"", acceptRanges)
+		return
+	}
+}
+
+func TestDownload(t *testing.T) {
+	r := makeRouter()
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
+	url := ts.URL + "/lena.jpg/full/max/0/default.png?dl"
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if status := resp.StatusCode; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %#v want %#v", status, http.StatusOK)
+		return
+	}
+
+	if contentDisposition := resp.Header.Get("Content-Disposition"); contentDisposition != "Attachement; filename=default.png" {
+		t.Errorf("Content-Disposition should enable downloading, got: %#v", contentDisposition)
 		return
 	}
 }
