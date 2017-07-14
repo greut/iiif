@@ -57,13 +57,12 @@ func makeRouter() http.Handler {
 	return router
 }
 
-func makeHandler() http.Handler {
+func makeHandler(peers ...string) http.Handler {
 	router := makeRouter()
 
 	// Caching
-	me := fmt.Sprintf("http://%s/", *host)
-	peers := groupcache.NewHTTPPool(me)
-	peers.Set(me) // TODO add any other servers here...
+	pool := groupcache.NewHTTPPool(peers[0])
+	pool.Set(peers...)
 
 	var images = groupcache.NewGroup("images", 128<<20, groupcache.GetterFunc(
 		func(ctx groupcache.Context, key string, dest groupcache.Sink) error {
@@ -102,8 +101,11 @@ func makeHandler() http.Handler {
 func main() {
 	flag.Parse()
 
+	me := fmt.Sprintf("http://%s/", *host)
+
 	// Routing
-	handler := makeHandler()
+	// TODO add any other servers here...
+	handler := makeHandler(me)
 
 	// Serving
 	listen := fmt.Sprintf("%v:%v", *host, *port)
