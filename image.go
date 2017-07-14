@@ -439,16 +439,15 @@ func handleQuality(quality string, opts *bimg.Options) error {
 	// native (IIIF 1.0)
 	if quality == "color" || quality == "default" || quality == "native" {
 		// do nothing.
+		return nil
 	} else if quality == "gray" {
 		opts.Interpretation = bimg.InterpretationGREY16
+		return nil
 	} else if quality == "bitonal" {
-		//	opts.Interpretation = bimg.InterpretationBW
 		message := fmt.Sprintf(qualityError, quality)
 		return HTTPError{http.StatusNotImplemented, message}
-	} else {
-		message := fmt.Sprintf(qualityError, quality)
-		return HTTPError{http.StatusBadRequest, message}
 	}
 
-	return nil
+	message := fmt.Sprintf(qualityError, quality)
+	return HTTPError{http.StatusBadRequest, message}
 }
