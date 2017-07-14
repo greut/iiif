@@ -93,6 +93,10 @@ Some viewers are supporting the iiif API out of the box. The following are inclu
 - [Leaflet-IIIF](https://github.com/mejackreed/Leaflet-IIIF)
 - [IiifViewer](https://github.com/klokantech/iiifviewer)
 
+## Download
+
+By adding `?dl` to any image, it will trigger the `Content-Disposition` with `attachement` and download the file ([ref](http://iiif.io/api/image/2.1/#a-implementation-notes)). Otherwise, the `Save as` command will take a non-`default.png` filename.
+
 ## TODO
 
 - Propose maxWidth, maxHeight and maxArea to prevent DOS on the server.

@@ -158,10 +158,13 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 			":", "_", -1),
 		",", "", -1)
 
+	disposition := "inline"
 	_, present := r.URL.Query()["dl"]
 	if present {
-		w.Header().Set("Content-Disposition", fmt.Sprintf("Attachement; filename=%s", filename))
+		disposition = "attachement"
 	}
+
+	w.Header().Set("Content-Disposition", fmt.Sprintf("%s; filename=%s", disposition, filename))
 
 	http.ServeContent(w, r, filename, modTime, bytes.NewReader(buffer))
 }

@@ -32,26 +32,30 @@ func TestAcceptRanges(t *testing.T) {
 	}
 }
 
-func TestDownload(t *testing.T) {
+func TestContentDisposition(t *testing.T) {
 	r := makeRouter()
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 
-	url := ts.URL + "/lena.jpg/full/max/0/default.png?dl"
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Fatal(err)
+	var tests = []struct {
+		url    string
+		header string
+	}{
+		{"/lena.jpg/full/max/0/default.png", "inline; filename=lena.jpg-full-max-0-default.png"},
+		{"/lena.jpg/full/max/0/default.png?dl", "attachement; filename=lena.jpg-full-max-0-default.png"},
 	}
-	defer resp.Body.Close()
+	for _, test := range tests {
+		url := ts.URL + test.url
+		resp, err := http.Get(url)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer resp.Body.Close()
 
-	if status := resp.StatusCode; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %#v want %#v", status, http.StatusOK)
-		return
-	}
-
-	if contentDisposition := resp.Header.Get("Content-Disposition"); contentDisposition != "Attachement; filename=lena.jpg-full-max-0-default.png" {
-		t.Errorf("Content-Disposition should enable downloading, got: %#v", contentDisposition)
-		return
+		if contentDisposition := resp.Header.Get("Content-Disposition"); contentDisposition != test.header {
+			t.Errorf("Content-Disposition should enable downloading, got: %#v want %#v", contentDisposition, test.header)
+			return
+		}
 	}
 }
 
