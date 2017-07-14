@@ -116,6 +116,10 @@ func resizeImage(vars map[string]string, cache *groupcache.Group) ([]byte, *time
 func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
+	identifier := vars["identifier"]
+	region := vars["region"]
+	size := vars["size"]
+	rotation := vars["rotation"]
 	quality := vars["quality"]
 	format := vars["format"]
 
@@ -147,7 +151,12 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filename := fmt.Sprintf("%v.%v", quality, format)
+	filename := fmt.Sprintf("%v-%v-%v-%v-%v.%v", identifier, region, size, rotation, quality, format)
+	filename = strings.Replace(
+		strings.Replace(
+			strings.Replace(filename, "/", "_", -1),
+			":", "_", -1),
+		",", "", -1)
 
 	_, present := r.URL.Query()["dl"]
 	if present {

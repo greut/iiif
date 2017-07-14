@@ -49,7 +49,7 @@ func TestDownload(t *testing.T) {
 		return
 	}
 
-	if contentDisposition := resp.Header.Get("Content-Disposition"); contentDisposition != "Attachement; filename=default.png" {
+	if contentDisposition := resp.Header.Get("Content-Disposition"); contentDisposition != "Attachement; filename=lena.jpg-full-max-0-default.png" {
 		t.Errorf("Content-Disposition should enable downloading, got: %#v", contentDisposition)
 		return
 	}
