@@ -76,7 +76,7 @@ f.addEventListener("submit", function(event) {
             f.parentNode.removeChild(f.nextSibling)
         }
 
-        var identifier = btoa(unescape(encodeURIComponent(url)))
+        var identifier = unescape(encodeURIComponent(url.replace("//", "/")))
         var div = document.createElement("div")
         var p = document.createElement("p")
         var a = document.createElement("a")
