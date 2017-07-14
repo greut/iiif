@@ -88,8 +88,22 @@ f.addEventListener("submit", function(event) {
         img.alt = url
 
         title.appendChild(document.createTextNode("Result"))
-        p.appendChild(document.createTextNode("View using: "))
 
+        var caption = p.cloneNode(true)
+        var dl = a.cloneNode(true)
+        dl.href = img.src + "?dl"
+        dl.appendChild(document.createTextNode("download"))
+        var open = a.cloneNode(true)
+        open.href = img.src
+        open.target = "_blank"
+        open.appendChild(document.createTextNode("view"))
+        caption.appendChild(document.createTextNode("Actions: "))
+        caption.appendChild(dl)
+        caption.appendChild(document.createTextNode(", "))
+        caption.appendChild(open)
+        caption.appendChild(document.createTextNode("."))
+
+        p.appendChild(document.createTextNode("View using: "))
         {{ $n := len .Viewers }}
         {{range $i, $v := .Viewers }}
             var l = a.cloneNode(true)
@@ -106,6 +120,7 @@ f.addEventListener("submit", function(event) {
         div.appendChild(title)
         div.appendChild(p)
         div.appendChild(img)
+        div.appendChild(caption)
 
         f.parentNode.insertBefore(div, f.nextSibling)
     }
