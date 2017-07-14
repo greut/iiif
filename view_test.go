@@ -49,6 +49,8 @@ func TestRedirectToInfo(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	req.Header.Add("X-Forwarded-Host", "example.org")
+	req.Header.Add("X-Forwarded-Proto", "https")
 
 	client := &http.Client{
 		CheckRedirect: func(r *http.Request, via []*http.Request) error {
@@ -65,7 +67,7 @@ func TestRedirectToInfo(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusSeeOther)
 	}
 
-	if location := resp.Header.Get("Location"); location != ts.URL+"/images/test.png/info.json" {
+	if location := resp.Header.Get("Location"); location != "https://example.org/images/test.png/info.json" {
 		t.Errorf("Location returned bad value: got %#v", location)
 	}
 }
