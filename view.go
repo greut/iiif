@@ -122,6 +122,8 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	groupcache, _ := ctx.Value(ContextKey("groupcache")).(*groupcache.Group)
 
+	identifier = strings.Replace(identifier, "../", "", -1)
+
 	image, modTime, err := openImage(identifier, groupcache)
 	if err != nil {
 		http.NotFound(w, r)

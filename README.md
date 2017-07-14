@@ -32,7 +32,7 @@ The API specifications can be found on [iiif.io](http://iiif.io/api/image/2.1/in
 
 ### [Identifier](http://iiif.io/api/image/2.1/#identifier)
 
-- `filename`: the name of the file **(all the images are in one folder)**
+- `filepath`: the path of the file
 - `base64(url)`: the url of the file **(encoded using base64)**
 
 ### [Region](http://iiif.io/api/image/2.1/index.html#region)

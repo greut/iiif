@@ -14,7 +14,7 @@ func TestInfoAsJson(t *testing.T) {
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 
-	url := ts.URL + "/test.png/info.json"
+	url := ts.URL + "/images/test.png/info.json"
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Fatal(err)
@@ -34,7 +34,7 @@ func TestInfoAsJsonLd(t *testing.T) {
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 
-	req, err := http.NewRequest("GET", ts.URL+"/test.png/info.json", nil)
+	req, err := http.NewRequest("GET", ts.URL+"/images/test.png/info.json", nil)
 	if err != nil {
 		log.Fatal(err)
 	}

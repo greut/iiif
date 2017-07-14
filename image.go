@@ -21,6 +21,8 @@ func resizeImage(vars map[string]string, cache *groupcache.Group) ([]byte, *time
 	identifier := vars["identifier"]
 	format := vars["format"]
 
+	identifier = strings.Replace(identifier, "../", "", -1)
+
 	// Type
 	bimgType := bimg.UNKNOWN
 	if format == "jpg" || format == "jpeg" {
