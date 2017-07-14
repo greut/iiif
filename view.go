@@ -62,6 +62,10 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 				"http://www.acprail.com/images/stories/maps/Swiss_map.jpg",
 				"Swiss trains map",
 			},
+			{
+				"http://t0.nl/northern_cardinal_bird_fail.jpg",
+				"Northern Cardinal male bird",
+			},
 		},
 		Viewers: []titledURL{
 			{"openseadragon.html", "OpenSeadragon"},
