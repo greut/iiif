@@ -147,7 +147,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		e := err.(HTTPError)
-		http.Error(w, e.Message, e.StatusCode)
+		http.Error(w, e.Error(), e.StatusCode)
 		return
 	}
 
@@ -260,7 +260,7 @@ func handleSizeAndRegion(size string, region string, opts *bimg.Options) error {
 		if strings.HasPrefix(size, "pct:") {
 			var err error
 			pct, err = strconv.ParseFloat(size[4:], 64)
-			if err != nil || pct == 0 {
+			if err != nil || pct <= 0 {
 				message := fmt.Sprintf(sizeError, size)
 				return HTTPError{http.StatusBadRequest, message}
 			}
@@ -387,6 +387,7 @@ func handleSizeAndRegion(size string, region string, opts *bimg.Options) error {
 		debug("Crop area: %v; %v (%v x %v)", x, y, w, h)
 
 		if errX != nil || errY != nil || errW != nil || errH != nil ||
+			x < 0 || y < 0 || w <= 0 || h <= 0 ||
 			int(x+w) > opts.Width || int(y+h) > opts.Height {
 			message := fmt.Sprintf(regionError, region)
 			return HTTPError{http.StatusBadRequest, message}
@@ -441,7 +442,9 @@ func handleQuality(quality string, opts *bimg.Options) error {
 	} else if quality == "gray" {
 		opts.Interpretation = bimg.InterpretationGREY16
 	} else if quality == "bitonal" {
-		opts.Interpretation = bimg.InterpretationBW
+		//	opts.Interpretation = bimg.InterpretationBW
+		message := fmt.Sprintf(qualityError, quality)
+		return HTTPError{http.StatusNotImplemented, message}
 	} else {
 		message := fmt.Sprintf(qualityError, quality)
 		return HTTPError{http.StatusBadRequest, message}

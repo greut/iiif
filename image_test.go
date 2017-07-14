@@ -110,7 +110,7 @@ func TestOutputSizes(t *testing.T) {
 		}
 
 		if status := resp.StatusCode; status != http.StatusOK {
-			t.Errorf("handler returned wrong status code: got %v want %v\nmesage: %s", status, http.StatusOK, string(body))
+			t.Errorf("handler returned wrong status code: got %v want %v\nmessage: %s", status, http.StatusOK, string(body))
 			return
 		}
 
@@ -122,6 +122,46 @@ func TestOutputSizes(t *testing.T) {
 
 		if size.Width != test.width || size.Height != test.height {
 			t.Errorf("sizes do not match for %v: got %vx%v want %vx%v", test.url, size.Width, size.Height, test.width, test.height)
+			return
+		}
+	}
+}
+
+func TestFailing(t *testing.T) {
+	r := makeRouter()
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
+	var tests = []struct {
+		url    string
+		status int
+	}{
+		{"/lena.jpg/full/max/0/default.png", 200},
+		{"/lena.jpg/full/max/1/default.png", 501},
+		{"/lena.jpg/full/max/0/bitonal.png", 501},
+		{"/lena.jpg/full/pct:-1/0/default.png", 400},
+		{"/lena.jpg/full/10/0/default.png", 400},
+		{"/lena.jpg/full/10,10,10/0/default.png", 400},
+		{"/lena.jpg/10/max/0/default.png", 400},
+		{"/lena.jpg/10,10/max/0/default.png", 400},
+		{"/lena.jpg/10,10,10/max/0/default.png", 400},
+		{"/lena.jpg/10,10,10,10,10/max/0/default.png", 400},
+		{"/lena.jpg/-10,10,10,10/max/0/default.png", 400},
+		{"/lena.jpg/10,10,0,0/max/0/default.png", 400},
+	}
+
+	for _, test := range tests {
+		debug("%s ~> %d", test.url, test.status)
+		url := ts.URL + test.url
+		resp, err := http.Get(url)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer resp.Body.Close()
+
+		if status := resp.StatusCode; status != test.status {
+			t.Errorf("handler returned wrong status code: got %v want %v", status, test.status)
 			return
 		}
 	}
