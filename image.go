@@ -136,7 +136,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		var mt *time.Time
 		buffer, mt, err = resizeImage(vars, images)
-		// On testing... mt might be null.
+		// When testing... mt might be null.
 		if mt != nil {
 			modTime = *mt
 		}
@@ -318,6 +318,12 @@ func handleSizeAndRegion(size string, region string, opts *bimg.Options) error {
 			}
 			opts.Gravity = bimg.GravityCentre
 		} else {
+			r := float64(opts.Width) / float64(opts.Height)
+			if height == 0 {
+				height = int(float64(width) / r)
+			} else if width == 0 {
+				width = int(float64(height) * r)
+			}
 			opts.Gravity = bimg.GravitySmart
 		}
 

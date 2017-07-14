@@ -14,11 +14,12 @@ func TestAcceptRanges(t *testing.T) {
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 
-	url := ts.URL + "/test.png/full/full/0/default.png"
+	url := ts.URL + "/lena.jpg/full/max/0/default.png"
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer resp.Body.Close()
 
 	if status := resp.StatusCode; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)

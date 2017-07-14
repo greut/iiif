@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -26,6 +27,38 @@ func TestInfoAsJson(t *testing.T) {
 
 	if contentType := resp.Header.Get("Content-Type"); contentType != "application/json" {
 		t.Errorf("handle should return JSON by default: got %v want application/json", contentType)
+	}
+}
+
+func TestInfoImageID(t *testing.T) {
+	r := makeRouter()
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
+	req, err := http.NewRequest("GET", ts.URL+"/images/test.png/info.json", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Add("X-Forwarded-Host", "example.org")
+	req.Header.Add("X-Forwarded-Proto", "https")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer resp.Body.Close()
+	decoder := json.NewDecoder(resp.Body)
+
+	var m IiifImage
+	err = decoder.Decode(&m)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if !strings.HasPrefix(m.ID, "https://example.org") {
+		t.Errorf("Image ID expected to contains correct host name, got: %v", m.ID)
 	}
 }
 

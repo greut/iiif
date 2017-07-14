@@ -115,7 +115,21 @@ func RedirectHandler(w http.ResponseWriter, r *http.Request) {
 
 	identifier = strings.Replace(identifier, "../", "", -1)
 
-	http.Redirect(w, r, fmt.Sprintf("%s://%s/%s/info.json", r.URL.Scheme, r.Host, identifier), 303)
+	scheme := "https"
+
+	if r.TLS == nil {
+		scheme = "http"
+	}
+	if r.Header.Get("X-Forwarded-Proto") != "" {
+		scheme = r.Header.Get("X-Forwarded-Proto")
+	}
+
+	host := r.Host
+	if r.Header.Get("X-Forwarded-Host") != "" {
+		host = r.Header.Get("X-Forwarded-Host")
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("%s://%s/%s/info.json", scheme, host, identifier), 303)
 }
 
 // InfoHandler responds to the image technical properties.
@@ -141,14 +155,23 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	scheme := "https"
+	scheme := r.URL.Scheme
+
 	if r.TLS == nil {
 		scheme = "http"
+	}
+	if r.Header.Get("X-Forwarded-Proto") != "" {
+		scheme = r.Header.Get("X-Forwarded-Proto")
+	}
+
+	host := r.Host
+	if r.Header.Get("X-Forwarded-Host") != "" {
+		host = r.Header.Get("X-Forwarded-Host")
 	}
 
 	p := IiifImage{
 		Context:  "http://iiif.io/api/image/2/context.json",
-		ID:       fmt.Sprintf("%s://%s/%s", scheme, r.Host, identifier),
+		ID:       fmt.Sprintf("%s://%s/%s", scheme, host, identifier),
 		Type:     "iiif:Image",
 		Protocol: "http://iiif.io/api/image",
 		Width:    size.Width,
