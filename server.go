@@ -51,7 +51,7 @@ func makeRouter() http.Handler {
 	router.HandleFunc("/demo", DemoHandler)
 	router.HandleFunc("/{identifier:.*}/info.json", InfoHandler)
 	router.HandleFunc("/{identifier:.*}/{region}/{size}/{rotation}/{quality}.{format}", ImageHandler)
-	router.HandleFunc("/{identifier:.*}/{viewer}", ViewerHandler)
+	router.HandleFunc("/{identifier:.*}/{viewer}.html", ViewerHandler)
 	router.HandleFunc("/{identifier:.*}", RedirectHandler)
 
 	return router

@@ -230,7 +230,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 // ViewerHandler responds with the existing templates.
 func ViewerHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	viewer := vars["viewer"]
+	viewer := vars["viewer"] + ".html"
 	identifier := vars["identifier"]
 
 	identifier, err := url.QueryUnescape(identifier)

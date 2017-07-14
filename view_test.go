@@ -10,6 +10,66 @@ import (
 	"testing"
 )
 
+func TestGetHtml(t *testing.T) {
+	r := makeRouter()
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
+	var tests = []struct {
+		url string
+	}{
+		{"/"},
+		{"/demo"},
+	}
+
+	for _, test := range tests {
+		url := ts.URL + test.url
+		resp, err := http.Get(url)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer resp.Body.Close()
+
+		if status := resp.StatusCode; status != http.StatusOK {
+			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+		}
+
+		if contentType := resp.Header.Get("Content-Type"); !strings.HasPrefix(contentType, "text/html") {
+			t.Errorf("index should return HTML by default: got %v want text/html", contentType)
+		}
+	}
+}
+
+func TestRedirectToInfo(t *testing.T) {
+	r := makeRouter()
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
+	req, err := http.NewRequest("GET", ts.URL+"/images/test.png", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	client := &http.Client{
+		CheckRedirect: func(r *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if status := resp.StatusCode; status != http.StatusSeeOther {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusSeeOther)
+	}
+
+	if location := resp.Header.Get("Location"); location != ts.URL+"/images/test.png/info.json" {
+		t.Errorf("Location returned bad value: got %#v", location)
+	}
+}
+
 func TestInfoAsJson(t *testing.T) {
 	r := makeRouter()
 	ts := httptest.NewServer(r)
@@ -20,6 +80,7 @@ func TestInfoAsJson(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer resp.Body.Close()
 
 	if status := resp.StatusCode; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
