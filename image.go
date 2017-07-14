@@ -155,7 +155,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 func openImage(identifier string, cache *groupcache.Group) (*bimg.Image, *time.Time, error) {
 	identifier, err := url.QueryUnescape(identifier)
 	if err != nil {
-		log.Printf("Filename is frob %#v", identifier)
+		debug("Filename is frob %#v", identifier)
 		return nil, nil, err
 	}
 
@@ -165,14 +165,19 @@ func openImage(identifier string, cache *groupcache.Group) (*bimg.Image, *time.T
 	stat, err := os.Stat(filename)
 	var buffer []byte
 	if err != nil {
-		log.Printf("Cannot open file %#v: %#v", filename, err.Error())
-		url, err := base64.StdEncoding.DecodeString(identifier)
-		if err != nil {
-			log.Printf("Not a base64 encoded URL either.")
-			return nil, nil, err
+		debug("Cannot open file %#v: %#v", filename, err.Error())
+		var sURL string
+		if strings.HasPrefix(identifier, "http:/") || strings.HasPrefix(identifier, "https:/") {
+			sURL = strings.Replace(identifier, ":/", "://", 1)
+		} else {
+			url, err := base64.StdEncoding.DecodeString(identifier)
+			if err != nil {
+				log.Printf("Not a base64 encoded URL either.")
+				return nil, nil, err
+			}
+			sURL = string(url)
 		}
 
-		sURL := string(url)
 		if cache != nil {
 			err = cache.Get(nil, sURL, groupcache.AllocatingByteSliceSink(&buffer))
 			if err != nil {

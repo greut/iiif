@@ -33,7 +33,8 @@ The API specifications can be found on [iiif.io](http://iiif.io/api/image/2.1/in
 ### [Identifier](http://iiif.io/api/image/2.1/#identifier)
 
 - `filepath`: the path of the file
-- `base64(url)`: the url of the file **(encoded using base64)**
+- `url`: the URL of the file **(double `//` is replaced with a simple `/`)**
+- `base64(url)`: the URL of the file **(encoded using base64)**
 
 ### [Region](http://iiif.io/api/image/2.1/index.html#region)
 
