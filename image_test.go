@@ -148,6 +148,7 @@ func TestFailing(t *testing.T) {
 		{"/lena.jpg/10,10,10,10,10/max/0/default.png", 400},
 		{"/lena.jpg/-10,10,10,10/max/0/default.png", 400},
 		{"/lena.jpg/10,10,0,0/max/0/default.png", 400},
+		{"/lena.jp2/full/max/0/default.png", 404},
 	}
 
 	for _, test := range tests {

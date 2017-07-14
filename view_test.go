@@ -20,6 +20,9 @@ func TestGetHtml(t *testing.T) {
 	}{
 		{"/"},
 		{"/demo"},
+		{"/lena.jpg/iiifviewer.html"},
+		{"/lena.jpg/leaflet.html"},
+		{"/lena.jpg/openseadragon.html"},
 	}
 
 	for _, test := range tests {
