@@ -166,7 +166,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	size, err := image.Size()
 	if err != nil {
 		message := fmt.Sprintf(openError, identifier)
-		http.Error(w, message, http.StatusNotImplemented)
+		http.Error(w, message, http.StatusBadRequest)
 		return
 	}
 

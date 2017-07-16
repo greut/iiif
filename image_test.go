@@ -156,6 +156,7 @@ func TestFailing(t *testing.T) {
 		{"/lena.jpg/index.html", http.StatusNotFound},
 		{"/lena.jp2/info.json", http.StatusNotFound},
 		{"/test.txt/full/max/0/default.png", http.StatusBadRequest},
+		{"/test.txt/info.json", http.StatusBadRequest},
 		{"/" + url.QueryEscape("http://dosimple.ch/missing.png") + "/full/max/0/default.png", http.StatusNotFound},
 	}
 
