@@ -247,6 +247,10 @@ func downloadImage(url string) ([]byte, error) {
 		debug("Download error: %q : %#v.", url, err)
 		return nil, err
 	}
+	if resp.StatusCode != 200 {
+		return nil, HTTPError{resp.StatusCode, url}
+	}
+
 	defer resp.Body.Close()
 	// XXX deal with last-modified-since...
 	var buf []byte

@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"testing"
 )
 
@@ -149,11 +150,13 @@ func TestFailing(t *testing.T) {
 		{"/lena.jpg/10,10,10/max/0/default.png", http.StatusBadRequest},
 		{"/lena.jpg/10,10,10,10,10/max/0/default.png", http.StatusBadRequest},
 		{"/lena.jpg/-10,10,10,10/max/0/default.png", http.StatusBadRequest},
+		{"/lena.jpg/0,0,10000,10000/max/0/default.png", http.StatusBadRequest},
 		{"/lena.jpg/10,10,0,0/max/0/default.png", http.StatusBadRequest},
 		{"/lena.jp2/full/max/0/default.png", http.StatusNotFound},
 		{"/lena.jpg/index.html", http.StatusNotFound},
 		{"/lena.jp2/info.json", http.StatusNotFound},
 		{"/test.txt/full/max/0/default.png", http.StatusBadRequest},
+		{"/" + url.QueryEscape("http://dosimple.ch/missing.png") + "/full/max/0/default.png", http.StatusNotFound},
 	}
 
 	for _, test := range tests {
