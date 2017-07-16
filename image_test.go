@@ -131,19 +131,21 @@ func TestFailing(t *testing.T) {
 		url    string
 		status int
 	}{
-		{"/lena.jpg/full/max/0/default.png", 200},
-		{"/lena.jpg/full/max/1/default.png", 501},
-		{"/lena.jpg/full/max/0/bitonal.png", 501},
-		{"/lena.jpg/full/pct:-1/0/default.png", 400},
-		{"/lena.jpg/full/10/0/default.png", 400},
-		{"/lena.jpg/full/10,10,10/0/default.png", 400},
-		{"/lena.jpg/10/max/0/default.png", 400},
-		{"/lena.jpg/10,10/max/0/default.png", 400},
-		{"/lena.jpg/10,10,10/max/0/default.png", 400},
-		{"/lena.jpg/10,10,10,10,10/max/0/default.png", 400},
-		{"/lena.jpg/-10,10,10,10/max/0/default.png", 400},
-		{"/lena.jpg/10,10,0,0/max/0/default.png", 400},
-		{"/lena.jp2/full/max/0/default.png", 404},
+		{"/lena.jpg/full/max/0/default.png", http.StatusOK},
+		{"/lena.jpg/full/max/1/default.png", http.StatusNotImplemented},
+		{"/lena.jpg/full/max/0/bitonal.png", http.StatusNotImplemented},
+		{"/lena.jpg/full/pct:-1/0/default.png", http.StatusBadRequest},
+		{"/lena.jpg/full/10/0/default.png", http.StatusBadRequest},
+		{"/lena.jpg/full/10,10,10/0/default.png", http.StatusBadRequest},
+		{"/lena.jpg/10/max/0/default.png", http.StatusBadRequest},
+		{"/lena.jpg/10,10/max/0/default.png", http.StatusBadRequest},
+		{"/lena.jpg/10,10,10/max/0/default.png", http.StatusBadRequest},
+		{"/lena.jpg/10,10,10,10,10/max/0/default.png", http.StatusBadRequest},
+		{"/lena.jpg/-10,10,10,10/max/0/default.png", http.StatusBadRequest},
+		{"/lena.jpg/10,10,0,0/max/0/default.png", http.StatusBadRequest},
+		{"/lena.jp2/full/max/0/default.png", http.StatusNotFound},
+		{"/lena.jp2/info.json", http.StatusNotFound},
+		{"/test.txt/info.json", http.StatusNotImplemented},
 	}
 
 	for _, test := range tests {
