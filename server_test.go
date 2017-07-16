@@ -8,7 +8,9 @@ import (
 )
 
 func TestWithGroupCache(t *testing.T) {
-	r := makeHandler("http://localhost/")
+	r := makeRouter()
+	r = setGroupCache(r, "http://localhost/")
+	r = WithRootDirectory(r, "fixtures")
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 

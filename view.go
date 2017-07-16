@@ -17,6 +17,9 @@ import (
 	"strings"
 )
 
+// error messages
+var openError = "libvips cannot open this file: %#v"
+
 // encodedURL contains a file URL and its base64 encoded version.
 type encodedURL struct {
 	URL     *url.URL
@@ -37,6 +40,10 @@ type demoData struct {
 	URLs  urlList
 }
 
+// template directory
+var templates = "templates"
+
+// template functions
 var fns = template.FuncMap{
 	"plus1": func(x int) int {
 		return x + 1
@@ -82,7 +89,8 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 // DemoHandler responds with the demo page.
 func DemoHandler(w http.ResponseWriter, r *http.Request) {
-	files, _ := ioutil.ReadDir(*root)
+	root := r.Context().Value(ContextKey("root")).(string)
+	files, _ := ioutil.ReadDir(root)
 
 	yoan, _ := url.Parse("http://dosimple.ch/yoan.png")
 
@@ -144,11 +152,12 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
+	root, _ := ctx.Value(ContextKey("root")).(string)
 	groupcache, _ := ctx.Value(ContextKey("groupcache")).(*groupcache.Group)
 
 	identifier = strings.Replace(identifier, "../", "", -1)
 
-	image, modTime, err := openImage(identifier, groupcache)
+	image, modTime, err := openImage(identifier, root, groupcache)
 	if err != nil {
 		http.NotFound(w, r)
 		return

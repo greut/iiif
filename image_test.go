@@ -5,13 +5,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 )
 
 func TestAcceptRanges(t *testing.T) {
-	r := makeRouter()
-	ts := httptest.NewServer(r)
+	ts := newServer()
 	defer ts.Close()
 
 	url := ts.URL + "/lena.jpg/full/max/0/default.png"
@@ -33,8 +31,7 @@ func TestAcceptRanges(t *testing.T) {
 }
 
 func TestContentDisposition(t *testing.T) {
-	r := makeRouter()
-	ts := httptest.NewServer(r)
+	ts := newServer()
 	defer ts.Close()
 
 	var tests = []struct {
@@ -60,8 +57,7 @@ func TestContentDisposition(t *testing.T) {
 }
 
 func TestOutputSizes(t *testing.T) {
-	r := makeRouter()
-	ts := httptest.NewServer(r)
+	ts := newServer()
 	defer ts.Close()
 
 	var tests = []struct {
@@ -128,8 +124,7 @@ func TestOutputSizes(t *testing.T) {
 }
 
 func TestFailing(t *testing.T) {
-	r := makeRouter()
-	ts := httptest.NewServer(r)
+	ts := newServer()
 	defer ts.Close()
 
 	var tests = []struct {

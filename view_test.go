@@ -12,8 +12,7 @@ import (
 )
 
 func TestGetHtml(t *testing.T) {
-	r := makeRouter()
-	ts := httptest.NewServer(r)
+	ts := newServer()
 	defer ts.Close()
 
 	var tests = []struct {
@@ -45,8 +44,7 @@ func TestGetHtml(t *testing.T) {
 }
 
 func TestRedirectToInfo(t *testing.T) {
-	r := makeRouter()
-	ts := httptest.NewServer(r)
+	ts := newServer()
 	defer ts.Close()
 
 	req, err := http.NewRequest("GET", ts.URL+"/images/test.png", nil)
@@ -77,8 +75,7 @@ func TestRedirectToInfo(t *testing.T) {
 }
 
 func TestInfoAsJson(t *testing.T) {
-	r := makeRouter()
-	ts := httptest.NewServer(r)
+	ts := newServer()
 	defer ts.Close()
 
 	url := ts.URL + "/images/test.png/info.json"
@@ -98,8 +95,7 @@ func TestInfoAsJson(t *testing.T) {
 }
 
 func TestInfoImageID(t *testing.T) {
-	r := makeRouter()
-	ts := httptest.NewServer(r)
+	ts := newServer()
 	defer ts.Close()
 
 	req, err := http.NewRequest("GET", ts.URL+"/images/test.png/info.json", nil)
@@ -130,8 +126,7 @@ func TestInfoImageID(t *testing.T) {
 }
 
 func TestInfoAsJsonLd(t *testing.T) {
-	r := makeRouter()
-	ts := httptest.NewServer(r)
+	ts := newServer()
 	defer ts.Close()
 
 	req, err := http.NewRequest("GET", ts.URL+"/images/test.png/info.json", nil)
@@ -156,8 +151,7 @@ func TestInfoAsJsonLd(t *testing.T) {
 }
 
 func TestOnlineImageBase64(t *testing.T) {
-	r := makeRouter()
-	ts := httptest.NewServer(r)
+	ts := newServer()
 	defer ts.Close()
 
 	imageURL := "http://dosimple.ch/yoan.png"
@@ -188,8 +182,7 @@ func TestOnlineImageBase64(t *testing.T) {
 }
 
 func TestOnlineImageUrl(t *testing.T) {
-	r := makeRouter()
-	ts := httptest.NewServer(r)
+	ts := newServer()
 	defer ts.Close()
 
 	var tests = []struct {
@@ -224,4 +217,10 @@ func TestOnlineImageUrl(t *testing.T) {
 			t.Errorf("%v image expected to be %dx%d: got %dx%d", test.url, test.width, test.height, m.Width, m.Height)
 		}
 	}
+}
+
+func newServer() *httptest.Server {
+	r := makeRouter()
+	r = WithRootDirectory(r, "fixtures")
+	return httptest.NewServer(r)
 }

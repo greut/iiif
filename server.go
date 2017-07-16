@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"github.com/golang/groupcache"
@@ -13,36 +12,6 @@ import (
 )
 
 var debug = d.Debug("iiif")
-
-var port = flag.String("port", "80", "Define which TCP port to use")
-var root = flag.String("root", "public", "Define root directory")
-var host = flag.String("host", "0.0.0.0", "Define the hostname")
-var templates = "templates"
-
-var openError = "libvips cannot open this file: %#v"
-var qualityError = "IIIF 2.1 `quality` and `format` arguments were expected: %#v"
-var regionError = "IIIF 2.1 `region` argument is not recognized: %#v"
-var sizeError = "IIIF 2.1 `size` argument is not recognized: %#v"
-var rotationError = "IIIF 2.1 `rotation` argument is not recognized: %#v"
-var rotationMissing = "libvips cannot rotate angle that isn't a multiple of 90: %#v"
-var formatError = "IIIF 2.1 `format` argument is not yet recognized: %#v"
-var formatMissing = "libvips cannot output this format %#v as of yet"
-var multipartRangesNotSupported = "multipart ranges are not supported as of yet."
-
-// ContextKey is the cache key to use.
-type ContextKey string
-
-// WithGroupCaches sets the various caches.
-func WithGroupCaches(h http.Handler, groups map[string]*groupcache.Group) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		for k, v := range groups {
-			ctx = context.WithValue(ctx, ContextKey(k), v)
-		}
-		r = r.WithContext(ctx)
-		h.ServeHTTP(w, r)
-	})
-}
 
 func makeRouter() http.Handler {
 	router := mux.NewRouter()
@@ -57,9 +26,7 @@ func makeRouter() http.Handler {
 	return router
 }
 
-func makeHandler(peers ...string) http.Handler {
-	router := makeRouter()
-
+func setGroupCache(router http.Handler, peers ...string) http.Handler {
 	// Caching
 	pool := groupcache.NewHTTPPool(peers[0])
 	pool.Set(peers...)
@@ -99,13 +66,20 @@ func makeHandler(peers ...string) http.Handler {
 }
 
 func main() {
+	var port = flag.String("port", "80", "Define which TCP port to use")
+	var root = flag.String("root", "public", "Define root directory")
+	var host = flag.String("host", "0.0.0.0", "Define the hostname")
+
 	flag.Parse()
 
 	me := fmt.Sprintf("http://%s/", *host)
 
 	// Routing
+	router := makeRouter()
 	// TODO add any other servers here...
-	handler := makeHandler(me)
+	handler := setGroupCache(router, me)
+	// Sets the root directory.
+	handler = WithRootDirectory(router, *root)
 
 	// Serving
 	listen := fmt.Sprintf("%v:%v", *host, *port)

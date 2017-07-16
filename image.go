@@ -17,6 +17,15 @@ import (
 	"time"
 )
 
+// error messages
+var qualityError = "IIIF 2.1 `quality` and `format` arguments were expected: %#v"
+var regionError = "IIIF 2.1 `region` argument is not recognized: %#v"
+var sizeError = "IIIF 2.1 `size` argument is not recognized: %#v"
+var rotationError = "IIIF 2.1 `rotation` argument is not recognized: %#v"
+var rotationMissing = "libvips cannot rotate angle that isn't a multiple of 90: %#v"
+var formatError = "IIIF 2.1 `format` argument is not yet recognized: %#v"
+var formatMissing = "libvips cannot output this format %#v as of yet"
+
 func resizeImage(vars map[string]string, cache *groupcache.Group) ([]byte, *time.Time, error) {
 	identifier := vars["identifier"]
 	format := vars["format"]
@@ -43,7 +52,7 @@ func resizeImage(vars map[string]string, cache *groupcache.Group) ([]byte, *time
 		return nil, nil, HTTPError{http.StatusBadRequest, message}
 	}
 
-	image, modTime, err := openImage(identifier, cache)
+	image, modTime, err := openImage(identifier, vars["root"], cache)
 	if err != nil {
 		return nil, nil, HTTPError{http.StatusNotFound, identifier}
 	}
@@ -124,8 +133,12 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	quality := vars["quality"]
 	format := vars["format"]
 
+	root, _ := r.Context().Value(ContextKey("root")).(string)
 	images, _ := r.Context().Value(ContextKey("images")).(*groupcache.Group)
 	thumbnails, _ := r.Context().Value(ContextKey("thumbnails")).(*groupcache.Group)
+
+	// passes the root variable along...
+	vars["root"] = root
 
 	sURL := r.URL.String()
 	modTime := time.Now()
@@ -170,7 +183,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, filename, modTime, bytes.NewReader(buffer))
 }
 
-func openImage(identifier string, cache *groupcache.Group) (*bimg.Image, *time.Time, error) {
+func openImage(identifier string, root string, cache *groupcache.Group) (*bimg.Image, *time.Time, error) {
 	identifier, err := url.QueryUnescape(identifier)
 	if err != nil {
 		debug("Filename is frob %#v", identifier)
@@ -179,7 +192,7 @@ func openImage(identifier string, cache *groupcache.Group) (*bimg.Image, *time.T
 
 	identifier = strings.Replace(identifier, "../", "", -1)
 
-	filename := filepath.Join(*root, identifier)
+	filename := filepath.Join(root, identifier)
 	stat, err := os.Stat(filename)
 	var buffer []byte
 	if err != nil {
