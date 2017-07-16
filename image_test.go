@@ -144,6 +144,7 @@ func TestFailing(t *testing.T) {
 		{"/lena.jpg/-10,10,10,10/max/0/default.png", http.StatusBadRequest},
 		{"/lena.jpg/10,10,0,0/max/0/default.png", http.StatusBadRequest},
 		{"/lena.jp2/full/max/0/default.png", http.StatusNotFound},
+		{"/lena.jpg/index.html", http.StatusNotFound},
 		{"/lena.jp2/info.json", http.StatusNotFound},
 		{"/test.txt/info.json", http.StatusNotImplemented},
 	}

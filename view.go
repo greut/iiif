@@ -258,10 +258,10 @@ func ViewerHandler(w http.ResponseWriter, r *http.Request) {
 
 	p := &struct{ Image string }{Image: identifier}
 
-	tpl := filepath.Join(templates, viewer)
+	tpl := filepath.Join(templates, "viewer", viewer)
 	t, err := template.ParseFiles(tpl)
 	if err != nil {
-		log.Printf("Template not found. %#v", err.Error())
+		debug("Template not found. %s. %#v", viewer, err.Error())
 		http.NotFound(w, r)
 		return
 	}
