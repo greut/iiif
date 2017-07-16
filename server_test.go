@@ -16,9 +16,12 @@ func TestWithGroupCache(t *testing.T) {
 
 	var tests = []struct {
 		identifier string
+		status     int
 	}{
-		{"lena.jpg"},
-		{"http://dosimple.ch/yoan.png"},
+		{"lena.jpg", http.StatusOK},
+		{"test.txt", http.StatusBadRequest},
+		{"http://dosimple.ch/yoan.png", http.StatusOK},
+		{"http://dosimple.ch/missing.png", http.StatusNotFound},
 	}
 
 	for _, test := range tests {
@@ -29,8 +32,8 @@ func TestWithGroupCache(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
-		if status := resp.StatusCode; status != http.StatusOK {
-			t.Errorf("handler returned wrong status code: got %#v want %#v", status, http.StatusOK)
+		if status := resp.StatusCode; status != test.status {
+			t.Errorf("handler returned wrong status code: got %#v want %#v", status, test.status)
 			return
 		}
 	}
