@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -191,28 +192,36 @@ func TestOnlineImageUrl(t *testing.T) {
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 
-	imageURL := "http://dosimple.ch/yoan.png"
-
-	url := ts.URL + "/" + imageURL + "/info.json"
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Fatal(err)
+	var tests = []struct {
+		url    string
+		width  int
+		height int
+	}{
+		{"http://dosimple.ch/yoan.png", 300, 300},
+		{"http://loremflickr.com/320/240?random=1", 320, 240},
 	}
 
-	if status := resp.StatusCode; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
-	}
+	for _, test := range tests {
+		resp, err := http.Get(ts.URL + "/" + url.PathEscape(test.url) + "/info.json")
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	defer resp.Body.Close()
-	decoder := json.NewDecoder(resp.Body)
+		if status := resp.StatusCode; status != http.StatusOK {
+			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+		}
 
-	var m IiifImage
-	err = decoder.Decode(&m)
-	if err != nil {
-		log.Fatal(err)
-	}
+		defer resp.Body.Close()
+		decoder := json.NewDecoder(resp.Body)
 
-	if m.Width != 300 && m.Height != 300 {
-		t.Errorf("%v image expected to be 300x300: got %v x %v", imageURL, m.Width, m.Height)
+		var m IiifImage
+		err = decoder.Decode(&m)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if m.Width != test.width && m.Height != test.height {
+			t.Errorf("%v image expected to be %dx%d: got %dx%d", test.url, test.width, test.height, m.Width, m.Height)
+		}
 	}
 }

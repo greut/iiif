@@ -7,6 +7,7 @@ import (
 	"github.com/golang/groupcache"
 	"github.com/gorilla/mux"
 	"gopkg.in/h2non/bimg.v1"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -235,9 +236,18 @@ func downloadImage(url string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	// XXX deal with last-modified-since...
-	buf := bytes.NewBuffer(make([]byte, 0, resp.ContentLength))
-	_, err = buf.ReadFrom(resp.Body)
-	return buf.Bytes(), nil
+	var buf []byte
+	if resp.ContentLength > 0 {
+		b := bytes.NewBuffer(make([]byte, 0, resp.ContentLength))
+		_, err = b.ReadFrom(resp.Body)
+		buf = b.Bytes()
+	} else {
+		buf, err = ioutil.ReadAll(resp.Body)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return buf, nil
 }
 
 func handleSizeAndRegion(size string, region string, opts *bimg.Options) error {
