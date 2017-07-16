@@ -66,6 +66,9 @@ func TestOutputSizes(t *testing.T) {
 		height int
 	}{
 		{"/lena.jpg/full/max/0/default.png", 1084, 2318},
+		{"/lena.jpg/full/max/0/default.jpg", 1084, 2318},
+		{"/lena.jpg/full/max/0/default.webp", 1084, 2318},
+		{"/lena.jpg/full/max/0/default.tif", 1084, 2318},
 		{"/lena.jpg/full/max/90/default.png", 2318, 1084},
 		{"/lena.jpg/full/max/!90/default.png", 2318, 1084},
 		{"/lena.jpg/full/max/180/default.png", 1084, 2318},
@@ -132,6 +135,10 @@ func TestFailing(t *testing.T) {
 		status int
 	}{
 		{"/lena.jpg/full/max/0/default.png", http.StatusOK},
+		{"/lena.jpg/full/max/0/default.gif", http.StatusNotImplemented},
+		{"/lena.jpg/full/max/0/default.pdf", http.StatusNotImplemented},
+		{"/lena.jpg/full/max/0/default.jp2", http.StatusNotImplemented},
+		{"/lena.jpg/full/max/0/default.bmp", http.StatusBadRequest},
 		{"/lena.jpg/full/max/1/default.png", http.StatusNotImplemented},
 		{"/lena.jpg/full/max/0/bitonal.png", http.StatusNotImplemented},
 		{"/lena.jpg/full/pct:-1/0/default.png", http.StatusBadRequest},
@@ -146,7 +153,7 @@ func TestFailing(t *testing.T) {
 		{"/lena.jp2/full/max/0/default.png", http.StatusNotFound},
 		{"/lena.jpg/index.html", http.StatusNotFound},
 		{"/lena.jp2/info.json", http.StatusNotFound},
-		{"/test.txt/info.json", http.StatusNotImplemented},
+		{"/test.txt/full/max/0/default.png", http.StatusBadRequest},
 	}
 
 	for _, test := range tests {

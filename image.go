@@ -60,7 +60,7 @@ func resizeImage(vars map[string]string, cache *groupcache.Group) ([]byte, *time
 	size, err := image.Size()
 	if err != nil {
 		message := fmt.Sprintf(openError, err.Error())
-		return nil, nil, HTTPError{http.StatusNotImplemented, message}
+		return nil, nil, HTTPError{http.StatusBadRequest, message}
 	}
 
 	options := bimg.Options{
