@@ -202,7 +202,7 @@ func TestOnlineImageUrl(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		resp, err := http.Get(ts.URL + "/" + url.PathEscape(test.url) + "/info.json")
+		resp, err := http.Get(ts.URL + "/" + url.QueryEscape(test.url) + "/info.json")
 		if err != nil {
 			log.Fatal(err)
 		}

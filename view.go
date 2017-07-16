@@ -106,7 +106,7 @@ func RedirectHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	identifier := vars["identifier"]
-	identifier, err := url.PathUnescape(identifier)
+	identifier, err := url.QueryUnescape(identifier)
 	if err != nil {
 		log.Printf("Filename is frob %#v", identifier)
 		http.NotFound(w, r)
@@ -136,7 +136,7 @@ func RedirectHandler(w http.ResponseWriter, r *http.Request) {
 func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	identifier := vars["identifier"]
-	identifier, err := url.PathUnescape(identifier)
+	identifier, err := url.QueryUnescape(identifier)
 	if err != nil {
 		log.Printf("Filename is frob %#v", identifier)
 		http.NotFound(w, r)
@@ -239,7 +239,7 @@ func ViewerHandler(w http.ResponseWriter, r *http.Request) {
 	viewer := vars["viewer"] + ".html"
 	identifier := vars["identifier"]
 
-	identifier, err := url.PathUnescape(identifier)
+	identifier, err := url.QueryUnescape(identifier)
 	if err != nil {
 		log.Printf("Filename is frob %#v", identifier)
 		http.NotFound(w, r)
