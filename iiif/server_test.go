@@ -1,4 +1,4 @@
-package main
+package iiif
 
 import (
 	"log"
@@ -8,9 +8,12 @@ import (
 )
 
 func TestWithGroupCache(t *testing.T) {
-	r := makeRouter()
-	r = setGroupCache(r, "http://localhost/")
-	r = WithRootDirectory(r, "fixtures")
+	r := MakeRouter()
+	r = SetGroupCache(r, "http://localhost/")
+	r = WithVars(r, map[string]string{
+		"root":      "../fixtures",
+		"templates": "../templates",
+	})
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 

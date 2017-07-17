@@ -1,4 +1,4 @@
-package main
+package iiif
 
 import (
 	"context"
@@ -21,11 +21,13 @@ func WithGroupCaches(h http.Handler, groups map[string]*groupcache.Group) http.H
 	})
 }
 
-// WithRootDirectory sets the root directory in the context.
-func WithRootDirectory(h http.Handler, root string) http.Handler {
+// WithVars sets the some variables.
+func WithVars(h http.Handler, vars map[string]string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, ContextKey("root"), root)
+		for k, v := range vars {
+			ctx = context.WithValue(ctx, ContextKey(k), v)
+		}
 		r = r.WithContext(ctx)
 		h.ServeHTTP(w, r)
 	})

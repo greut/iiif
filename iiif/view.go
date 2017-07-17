@@ -1,4 +1,4 @@
-package main
+package iiif
 
 import (
 	"bytes"
@@ -40,9 +40,6 @@ type demoData struct {
 	URLs  urlList
 }
 
-// template directory
-var templates = "templates"
-
 // template functions
 var fns = template.FuncMap{
 	"plus1": func(x int) int {
@@ -77,12 +74,15 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		Viewers: []titledURL{
 			{"openseadragon.html", "OpenSeadragon"},
 			{"leaflet.html", "Leaflet-IIIF"},
-			{"iiifviewer.html", "IiifViewer"},
+			{"iiifviewer.html", "IIIF Viewer"},
 			{"info.json", "JSON-LD profile"},
 		},
 	}
 
-	t := template.Must(template.New("index.html").Funcs(fns).ParseFiles("templates/index.html"))
+	templates := r.Context().Value(ContextKey("templates")).(string)
+	tpl := filepath.Join(templates, "index.html")
+
+	t := template.Must(template.New("index.html").Funcs(fns).ParseFiles(tpl))
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	t.Execute(w, p)
 }
@@ -104,7 +104,10 @@ func DemoHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	t := template.Must(template.ParseFiles("templates/demo.html"))
+	templates := r.Context().Value(ContextKey("templates")).(string)
+	tpl := filepath.Join(templates, "demo.html")
+
+	t := template.Must(template.ParseFiles(tpl))
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	t.Execute(w, &p)
 }
@@ -189,7 +192,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 		host = r.Header.Get("X-Forwarded-Host")
 	}
 
-	p := IiifImage{
+	p := Image{
 		Context:  "http://iiif.io/api/image/2/context.json",
 		ID:       fmt.Sprintf("%s://%s/%s", scheme, host, identifier),
 		Type:     "iiif:Image",
@@ -198,7 +201,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 		Height:   size.Height,
 		Profile: []interface{}{
 			"http://iiif.io/api/image/2/level2.json",
-			&IiifImageProfile{
+			&ImageProfile{
 				Context:   "http://iiif.io/api/image/2/context.json",
 				Type:      "iiif:ImageProfile",
 				Formats:   []string{"jpg", "png", "tif", "webp"},
@@ -262,6 +265,8 @@ func ViewerHandler(w http.ResponseWriter, r *http.Request) {
 	identifier = strings.Replace(identifier, "../", "", -1)
 
 	p := &struct{ Image string }{Image: identifier}
+
+	templates := r.Context().Value(ContextKey("templates")).(string)
 
 	tpl := filepath.Join(templates, "viewer", viewer)
 	t, err := template.ParseFiles(tpl)

@@ -1,4 +1,4 @@
-package main
+package iiif
 
 import (
 	"github.com/golang/groupcache"
@@ -10,7 +10,8 @@ import (
 
 var debug = d.Debug("iiif")
 
-func makeRouter() http.Handler {
+// MakeRouter construct the basic router (no middlewares)
+func MakeRouter() http.Handler {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/", IndexHandler)
@@ -23,7 +24,8 @@ func makeRouter() http.Handler {
 	return router
 }
 
-func setGroupCache(router http.Handler, peers ...string) http.Handler {
+// SetGroupCache set the two caches for input and output pictures
+func SetGroupCache(router http.Handler, peers ...string) http.Handler {
 	// Caching
 	pool := groupcache.NewHTTPPool(peers[0])
 	pool.Set(peers...)

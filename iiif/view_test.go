@@ -1,4 +1,4 @@
-package main
+package iiif
 
 import (
 	"encoding/base64"
@@ -220,7 +220,10 @@ func TestOnlineImageUrl(t *testing.T) {
 }
 
 func newServer() *httptest.Server {
-	r := makeRouter()
-	r = WithRootDirectory(r, "fixtures")
+	r := MakeRouter()
+	r = WithVars(r, map[string]string{
+		"root":      "../fixtures",
+		"templates": "../templates",
+	})
 	return httptest.NewServer(r)
 }

@@ -1,4 +1,4 @@
-package main
+package iiif
 
 import (
 	"gopkg.in/h2non/bimg.v1"

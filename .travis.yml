@@ -52,21 +52,21 @@ before_install:
   - cd ..
 
 before_script:
+  - make deps
   - >
     go get -u
-    github.com/gorilla/mux
-    gopkg.in/h2non/bimg.v1
-    github.com/golang/protobuf/proto
-    github.com/golang/groupcache
     github.com/golang/lint/golint
     github.com/mattn/goveralls
-    github.com/tj/go-debug
 
 script:
   - test `gofmt -s -d . | tee -a /dev/fd/2 | wc -l` -eq 0
-  - test `golint . | tee -a /dev/fd/2 | wc -l` -eq 0
+  - test `golint github.com/greut/iiif/iiif | tee -a /dev/fd/2 | wc -l` -eq 0
   - go tool vet .
-  - go test -v -race -covermode=atomic -coverprofile=coverage.out
+  - >
+    go test -v -race
+    -covermode=atomic
+    -coverprofile=coverage.out
+    github.com/greut/iiif/iiif
 
 after_success:
   - goveralls -coverprofile=coverage.out -service=travis-ci

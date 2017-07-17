@@ -10,7 +10,7 @@ It is generated from these files:
 It has these top-level messages:
 	ImageWithModTime
 */
-package main
+package iiif
 
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"

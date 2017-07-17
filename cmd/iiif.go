@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/greut/iiif/iiif"
 	"log"
 	"net/http"
 )
@@ -14,8 +15,11 @@ func main() {
 	flag.Parse()
 
 	// build router with group cache middleware and root directory.
-	handler := setGroupCache(
-		WithRootDirectory(makeRouter(), *root),
+	handler := iiif.SetGroupCache(
+		iiif.WithVars(iiif.MakeRouter(), map[string]string{
+			"root":      *root,
+			"templates": "templates",
+		}),
 		fmt.Sprintf("http://%s/", *host), // TODO add any other servers here...
 	)
 
