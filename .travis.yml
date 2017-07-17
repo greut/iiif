@@ -52,14 +52,19 @@ before_install:
   - cd ..
 
 before_script:
-  - make deps
   - >
     go get -u
+    github.com/golang/groupcache
     github.com/golang/lint/golint
+    github.com/golang/protobuf/proto
+    github.com/gorilla/mux
     github.com/mattn/goveralls
+    github.com/tj/go-debug
+    gopkg.in/h2non/bimg.v1
+  - go build -o bin/iiif cmd/iiif.go
 
 script:
-  - test `gofmt -s -d . | tee -a /dev/fd/2 | wc -l` -eq 0
+  - test `gofmt -s -d cmd iiif | tee -a /dev/fd/2 | wc -l` -eq 0
   - test `golint github.com/greut/iiif/iiif | tee -a /dev/fd/2 | wc -l` -eq 0
   - go tool vet .
   - >

@@ -4,7 +4,7 @@ GOPATH := $(shell pwd)
 all: bin/iiif
 
 rmdeps:
-	test -d src && rm -rf src
+	test -d src && rm -rf src || true
 
 deps: rmdeps
 	mkdir -p src/github.com/greut/iiif
