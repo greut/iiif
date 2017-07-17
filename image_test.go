@@ -67,8 +67,10 @@ func TestOutputSizes(t *testing.T) {
 		height int
 	}{
 		{"/lena.jpg/full/max/0/default.png", 1084, 2318},
+		{"/lena.jpg/full/max/0/default.jpeg", 1084, 2318},
 		{"/lena.jpg/full/max/0/default.jpg", 1084, 2318},
 		{"/lena.jpg/full/max/0/default.webp", 1084, 2318},
+		{"/lena.jpg/full/max/0/default.tiff", 1084, 2318},
 		{"/lena.jpg/full/max/0/default.tif", 1084, 2318},
 		{"/lena.jpg/full/max/90/default.png", 2318, 1084},
 		{"/lena.jpg/full/max/!90/default.png", 2318, 1084},

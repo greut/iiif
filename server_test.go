@@ -19,12 +19,14 @@ func TestWithGroupCache(t *testing.T) {
 		status     int
 	}{
 		{"lena.jpg", http.StatusOK},
-		{"test.txt", http.StatusBadRequest},
+		{"test.txt", http.StatusNotImplemented},
 		{"http://dosimple.ch/yoan.png", http.StatusOK},
+		{"http://dosimple.ch", http.StatusNotImplemented},
 		{"http://dosimple.ch/missing.png", http.StatusNotFound},
 	}
 
 	for _, test := range tests {
+		debug("%v ~> %d", test.identifier, test.status)
 		url := ts.URL + "/" + test.identifier + "/full/max/0/default.png"
 		resp, err := http.Get(url)
 		if err != nil {

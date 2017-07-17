@@ -25,6 +25,7 @@ var rotationError = "IIIF 2.1 `rotation` argument is not recognized: %#v"
 var rotationMissing = "libvips cannot rotate angle that isn't a multiple of 90: %#v"
 var formatError = "IIIF 2.1 `format` argument is not yet recognized: %#v"
 var formatMissing = "libvips cannot output this format %#v as of yet"
+var formatReadMissing = "libvips cannot read this format %#v as of yet"
 
 func resizeImage(vars map[string]string, cache *groupcache.Group) ([]byte, *time.Time, error) {
 	identifier := vars["identifier"]
@@ -34,22 +35,19 @@ func resizeImage(vars map[string]string, cache *groupcache.Group) ([]byte, *time
 
 	// Type
 	var bimgType bimg.ImageType
-	if format == "jpg" || format == "jpeg" {
-		bimgType = bimg.JPEG
-	} else if format == "png" {
-		bimgType = bimg.PNG
-	} else if format == "webp" {
-		bimgType = bimg.WEBP
-	} else if format == "tif" || format == "tiff" {
-		bimgType = bimg.TIFF
-	} else if format == "gif" {
-		bimgType = bimg.GIF
-	} else if format == "pdf" {
-		bimgType = bimg.PDF
+	if format == "jpg" {
+		format = "jpeg"
+	} else if format == "tif" {
+		format = "tiff"
 	} else if format == "jp2" {
-		bimgType = bimg.MAGICK
-	} else if format == "svg" {
-		bimgType = bimg.SVG
+		format = "magick"
+	}
+
+	for k, v := range bimg.ImageTypes {
+		if v == format {
+			bimgType = k
+			break
+		}
 	}
 
 	if !bimg.IsTypeSupportedSave(bimgType) {
@@ -57,8 +55,13 @@ func resizeImage(vars map[string]string, cache *groupcache.Group) ([]byte, *time
 		return nil, nil, HTTPError{http.StatusNotImplemented, message}
 	}
 
+	// Open image
 	image, modTime, err := openImage(identifier, vars["root"], cache)
 	if err != nil {
+		e, ok := err.(HTTPError)
+		if ok {
+			return nil, nil, e
+		}
 		return nil, nil, HTTPError{http.StatusNotFound, identifier}
 	}
 
@@ -238,6 +241,12 @@ func openImage(identifier string, root string, cache *groupcache.Group) (*bimg.I
 	modTime := time.Now()
 	if stat != nil {
 		modTime = stat.ModTime()
+	}
+
+	imageType := bimg.DetermineImageType(buffer)
+	if !bimg.IsTypeSupported(imageType) {
+		message := fmt.Sprintf(formatReadMissing, bimg.ImageTypes[imageType])
+		return nil, nil, HTTPError{http.StatusNotImplemented, message}
 	}
 
 	image := bimg.NewImage(buffer)
