@@ -10,7 +10,8 @@ import (
 
 func main() {
 	var port = flag.String("port", "80", "Define which TCP port to use")
-	var root = flag.String("root", "public", "Define root directory")
+	var root = flag.String("root", "public", "Define the images directory")
+	var templates = flag.String("templates", "templates", "Define the templates directory")
 	var host = flag.String("host", "0.0.0.0", "Define the hostname")
 	flag.Parse()
 
@@ -18,7 +19,7 @@ func main() {
 	handler := iiif.SetGroupCache(
 		iiif.WithVars(iiif.MakeRouter(), map[string]string{
 			"root":      *root,
-			"templates": "templates",
+			"templates": *templates,
 		}),
 		fmt.Sprintf("http://%s/", *host), // TODO add any other servers here...
 	)
