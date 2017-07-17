@@ -159,7 +159,12 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 
 	image, modTime, err := openImage(identifier, root, groupcache)
 	if err != nil {
-		http.NotFound(w, r)
+		e, ok := err.(HTTPError)
+		if ok {
+			http.Error(w, e.Error(), e.StatusCode)
+		} else {
+			http.NotFound(w, r)
+		}
 		return
 	}
 
