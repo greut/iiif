@@ -114,7 +114,7 @@ func TestInfoImageID(t *testing.T) {
 	defer resp.Body.Close()
 	decoder := json.NewDecoder(resp.Body)
 
-	var m IiifImage
+	var m Image
 	err = decoder.Decode(&m)
 	if err != nil {
 		log.Fatal(err)
@@ -170,7 +170,7 @@ func TestOnlineImageBase64(t *testing.T) {
 	defer resp.Body.Close()
 	decoder := json.NewDecoder(resp.Body)
 
-	var m IiifImage
+	var m Image
 	err = decoder.Decode(&m)
 	if err != nil {
 		log.Fatal(err)
@@ -207,7 +207,7 @@ func TestOnlineImageUrl(t *testing.T) {
 		defer resp.Body.Close()
 		decoder := json.NewDecoder(resp.Body)
 
-		var m IiifImage
+		var m Image
 		err = decoder.Decode(&m)
 		if err != nil {
 			log.Fatal(err)

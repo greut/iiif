@@ -11,19 +11,12 @@ Image API [Compliance](http://iiif.io/api/image/2.1/compliance/) Level 2 is reac
 libvips is required by [bimg](https://github.com/h2non/bimg/).
 
 ```
-$ go get -u \
-         github.com/golang/protobuf/proto \
-         github.com/golang/groupcache \
-         github.com/golang/lint/golint \
-         github.com/gorilla/mux \
-         github.com/tj/go-debug \
-         gopkg.in/h2non/bimg.v1
-$ go build -o bin/iiif
-$ bin/iiif --help
+$ make deps
+$ make
 
 $ bin/iiif --host 0.0.0.0 --port 8080 --root images
 
-$ DEBUG=iiif,bimg go test -v
+$ DEBUG=iiif,bimg go test -v github.com/greut/iiif/iiif
 ```
 
 ## IIIF image API 2.1

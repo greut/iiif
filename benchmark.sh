@@ -5,19 +5,25 @@
 set -xe
 
 port=8000
-root=images
-image=cassons.jpg
+root=fixtures
+image=lena.jpg
 cache=.benchmark.db
 
+# Install Vegeta
+# go get -u github.com/tsenart/vegeta
+
+GOPATH=`pwd`
+PATH=$PATH:$GOPATH/bin
+
 rm -f $cache
-go build -o bin/iiif
-./bin/iiif -cache $cache -port $port -root $root & > /dev/null 2>&1
+make
+./bin/iiif -port $port -root $root & > /dev/null 2>&1
 pid=$!
 
 suite() {
   echo "$1 --------------------------------------"
   echo "GET http://localhost:$port/$image/$2" \
-    | ./bin/vegeta attack \
+    | vegeta attack \
         -duration=30s \
         -rate=50 \
     | ./bin/vegeta report
