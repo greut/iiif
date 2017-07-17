@@ -33,7 +33,7 @@ func resizeImage(vars map[string]string, cache *groupcache.Group) ([]byte, *time
 	identifier = strings.Replace(identifier, "../", "", -1)
 
 	// Type
-	bimgType := bimg.UNKNOWN
+	var bimgType bimg.ImageType
 	if format == "jpg" || format == "jpeg" {
 		bimgType = bimg.JPEG
 	} else if format == "png" {
@@ -42,14 +42,19 @@ func resizeImage(vars map[string]string, cache *groupcache.Group) ([]byte, *time
 		bimgType = bimg.WEBP
 	} else if format == "tif" || format == "tiff" {
 		bimgType = bimg.TIFF
-	} else if format == "gif" || format == "pdf" || format == "jp2" {
-		message := fmt.Sprintf(formatMissing, format)
-		return nil, nil, HTTPError{http.StatusNotImplemented, message}
+	} else if format == "gif" {
+		bimgType = bimg.GIF
+	} else if format == "pdf" {
+		bimgType = bimg.PDF
+	} else if format == "jp2" {
+		bimgType = bimg.MAGICK
+	} else if format == "svg" {
+		bimgType = bimg.SVG
 	}
 
-	if bimgType == bimg.UNKNOWN {
-		message := fmt.Sprintf(formatError, format)
-		return nil, nil, HTTPError{http.StatusBadRequest, message}
+	if !bimg.IsTypeSupportedSave(bimgType) {
+		message := fmt.Sprintf(formatMissing, format)
+		return nil, nil, HTTPError{http.StatusNotImplemented, message}
 	}
 
 	image, modTime, err := openImage(identifier, vars["root"], cache)
