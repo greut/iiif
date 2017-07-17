@@ -232,8 +232,7 @@ func openImage(identifier string, root string, cache *groupcache.Group) (*bimg.I
 	} else {
 		buffer, err = bimg.Read(filename)
 		if err != nil {
-			debug("Cannot open file %#v: %#v", filename, err.Error())
-			return nil, nil, err
+			return nil, nil, HTTPError{http.StatusBadRequest, err.Error()}
 		}
 
 	}
