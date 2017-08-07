@@ -221,9 +221,9 @@ func TestOnlineImageUrl(t *testing.T) {
 
 func newServer() *httptest.Server {
 	r := MakeRouter()
-	r = WithVars(r, map[string]string{
-		"root":      "../fixtures",
-		"templates": "../templates",
+	r = WithConfig(r, &Config{
+		Images:    "../fixtures",
+		Templates: "../templates",
 	})
 	return httptest.NewServer(r)
 }

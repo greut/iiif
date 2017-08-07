@@ -79,8 +79,8 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	templates := r.Context().Value(ContextKey("templates")).(string)
-	tpl := filepath.Join(templates, "index.html")
+	config, _ := r.Context().Value(ContextKey("config")).(*Config)
+	tpl := filepath.Join(config.Templates, "index.html")
 
 	t := template.Must(template.New("index.html").Funcs(fns).ParseFiles(tpl))
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -89,8 +89,9 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 // DemoHandler responds with the demo page.
 func DemoHandler(w http.ResponseWriter, r *http.Request) {
-	root := r.Context().Value(ContextKey("root")).(string)
-	files, _ := ioutil.ReadDir(root)
+	config, _ := r.Context().Value(ContextKey("config")).(*Config)
+
+	files, _ := ioutil.ReadDir(config.Images)
 
 	yoan, _ := url.Parse("http://dosimple.ch/yoan.png")
 
@@ -104,8 +105,7 @@ func DemoHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	templates := r.Context().Value(ContextKey("templates")).(string)
-	tpl := filepath.Join(templates, "demo.html")
+	tpl := filepath.Join(config.Templates, "demo.html")
 
 	t := template.Must(template.ParseFiles(tpl))
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -155,12 +155,12 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	root, _ := ctx.Value(ContextKey("root")).(string)
+	config, _ := ctx.Value(ContextKey("config")).(*Config)
 	groupcache, _ := ctx.Value(ContextKey("groupcache")).(*groupcache.Group)
 
 	identifier = strings.Replace(identifier, "../", "", -1)
 
-	image, modTime, err := openImage(identifier, root, groupcache)
+	image, modTime, err := openImage(identifier, config.Images, groupcache)
 	if err != nil {
 		e, ok := err.(HTTPError)
 		if ok {
@@ -266,9 +266,9 @@ func ViewerHandler(w http.ResponseWriter, r *http.Request) {
 
 	p := &struct{ Image string }{Image: identifier}
 
-	templates := r.Context().Value(ContextKey("templates")).(string)
+	config := r.Context().Value(ContextKey("config")).(*Config)
 
-	tpl := filepath.Join(templates, "viewer", viewer)
+	tpl := filepath.Join(config.Templates, "viewer", viewer)
 	t, err := template.ParseFiles(tpl)
 	if err != nil {
 		debug("Template not found. %s. %#v", viewer, err.Error())

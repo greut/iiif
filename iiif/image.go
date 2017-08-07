@@ -141,12 +141,11 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	quality := vars["quality"]
 	format := vars["format"]
 
-	root, _ := r.Context().Value(ContextKey("root")).(string)
+	config, _ := r.Context().Value(ContextKey("config")).(*Config)
 	images, _ := r.Context().Value(ContextKey("images")).(*groupcache.Group)
 	thumbnails, _ := r.Context().Value(ContextKey("thumbnails")).(*groupcache.Group)
 
-	// passes the root variable along...
-	vars["root"] = root
+	vars["root"] = config.Images
 
 	sURL := r.URL.String()
 	modTime := time.Now()

@@ -10,6 +10,7 @@ deps: rmdeps
 	mkdir -p src/github.com/greut/iiif
 	ln -s ../../../../iiif src/github.com/greut/iiif
 	go get -u \
+         github.com/BurntSushi/toml \
          github.com/golang/protobuf/proto \
          github.com/golang/groupcache \
          github.com/gorilla/mux \

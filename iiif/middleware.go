@@ -21,13 +21,11 @@ func WithGroupCaches(h http.Handler, groups map[string]*groupcache.Group) http.H
 	})
 }
 
-// WithVars sets the some variables.
-func WithVars(h http.Handler, vars map[string]string) http.Handler {
+// WithConfig sets the IIIF server configuration.
+func WithConfig(h http.Handler, config *Config) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		for k, v := range vars {
-			ctx = context.WithValue(ctx, ContextKey(k), v)
-		}
+		ctx = context.WithValue(ctx, ContextKey("config"), config)
 		r = r.WithContext(ctx)
 		h.ServeHTTP(w, r)
 	})

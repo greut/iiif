@@ -40,3 +40,11 @@ type Image struct {
 	Sizes    []Size        `json:"sizes,omitempty"`
 	Tiles    []Tile        `json:"tiles,omitempty"`
 }
+
+// Config stores the IIIF server configuration.
+type Config struct {
+	Host      string `toml:"host"`
+	Port      int    `toml:"port"`
+	Templates string `toml:"templates"`
+	Images    string `toml:"images"`
+}

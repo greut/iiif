@@ -14,7 +14,7 @@ libvips is required by [bimg](https://github.com/h2non/bimg/).
 $ make deps
 $ make
 
-$ bin/iiif --host 0.0.0.0 --port 8080 --root images
+$ bin/iiif config.toml
 
 $ DEBUG=iiif,bimg go test -v github.com/greut/iiif/iiif
 ```
