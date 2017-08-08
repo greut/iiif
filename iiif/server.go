@@ -45,8 +45,12 @@ func SetGroupCache(router http.Handler, peers ...string) http.Handler {
 
 	var thumbnails = groupcache.NewGroup("thumbnails", 512<<20, groupcache.GetterFunc(
 		func(ctx groupcache.Context, key string, dest groupcache.Sink) error {
-			vars := ctx.(map[string]string)
-			data, modTime, err := resizeImage(vars, images)
+			// FIXME ugly bits
+			c := ctx.(struct {
+				vars   map[string]string
+				config *Config
+			})
+			data, modTime, err := resizeImage(c.config, c.vars, images)
 			if err != nil {
 				return err
 			}

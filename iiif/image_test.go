@@ -130,7 +130,7 @@ func TestOutputSizes(t *testing.T) {
 }
 
 func TestFailing(t *testing.T) {
-	ts := newServer()
+	ts := newServerWithMaxSize(2000, 3000, 5000000)
 	defer ts.Close()
 
 	var tests = []struct {
@@ -157,6 +157,9 @@ func TestFailing(t *testing.T) {
 		{"/lena.jpg/-10,10,10,10/max/0/default.png", http.StatusBadRequest},
 		{"/lena.jpg/0,0,10000,10000/max/0/default.png", http.StatusBadRequest},
 		{"/lena.jpg/10,10,0,0/max/0/default.png", http.StatusBadRequest},
+		{"/lena.jpg/full/2001,10/0/default.png", http.StatusBadRequest},
+		{"/lena.jpg/full/10,3001/0/default.png", http.StatusBadRequest},
+		{"/lena.jpg/full/2000,3000/0/default.png", http.StatusBadRequest},
 		{"/lena.jp2/full/max/0/default.png", http.StatusNotFound},
 		{"/lena.jpg/index.html", http.StatusNotFound},
 		{"/images/full/max/0/default.png", http.StatusBadRequest},

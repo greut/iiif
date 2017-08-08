@@ -206,6 +206,9 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 				Type:      "iiif:ImageProfile",
 				Formats:   []string{"jpg", "png", "tif", "webp"},
 				Qualities: []string{"gray", "default"},
+				MaxWidth:  config.MaxWidth,
+				MaxHeight: config.MaxHeight,
+				MaxArea:   config.MaxArea,
 				Supports: []string{
 					//"baseUriRedirect",
 					//"canonicalLinkHeader",

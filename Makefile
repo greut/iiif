@@ -14,6 +14,7 @@ deps: rmdeps
          github.com/golang/protobuf/proto \
          github.com/golang/groupcache \
          github.com/gorilla/mux \
+         github.com/mitchellh/mapstructure \
          github.com/tj/go-debug \
          gopkg.in/h2non/bimg.v1
 

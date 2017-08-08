@@ -92,8 +92,7 @@ By adding `?dl` to any image, it will trigger the `Content-Disposition` with `at
 
 ## TODO
 
-- Propose maxWidth, maxHeight and maxArea to prevent DOS on the server.
-- Sendfile
+- Adapt `region` for `max` when `maxWidth`, `maxHeight` and/or `maxArea` are specified.
 
 ## Friendly projects
 

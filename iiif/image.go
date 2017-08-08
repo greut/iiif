@@ -21,13 +21,14 @@ import (
 var qualityError = "IIIF 2.1 `quality` and `format` arguments were expected: %#v"
 var regionError = "IIIF 2.1 `region` argument is not recognized: %#v"
 var sizeError = "IIIF 2.1 `size` argument is not recognized: %#v"
+var maxSizeError = "The given `size` is out of the limits %vx%v (%vx%v or area %v)"
 var rotationError = "IIIF 2.1 `rotation` argument is not recognized: %#v"
 var rotationMissing = "libvips cannot rotate angle that isn't a multiple of 90: %#v"
 var formatError = "IIIF 2.1 `format` argument is not yet recognized: %#v"
 var formatMissing = "libvips cannot output this format %#v as of yet"
 var formatReadMissing = "libvips cannot read this format %#v as of yet"
 
-func resizeImage(vars map[string]string, cache *groupcache.Group) ([]byte, *time.Time, error) {
+func resizeImage(config *Config, vars map[string]string, cache *groupcache.Group) ([]byte, *time.Time, error) {
 	identifier := vars["identifier"]
 	format := vars["format"]
 
@@ -56,7 +57,7 @@ func resizeImage(vars map[string]string, cache *groupcache.Group) ([]byte, *time
 	}
 
 	// Open image
-	image, modTime, err := openImage(identifier, vars["root"], cache)
+	image, modTime, err := openImage(identifier, config.Images, cache)
 	if err != nil {
 		e, ok := err.(HTTPError)
 		if ok {
@@ -80,7 +81,7 @@ func resizeImage(vars map[string]string, cache *groupcache.Group) ([]byte, *time
 	// Size & Region
 	// ----
 	// Bimg handles the zooming before the cropping
-	err = handleSizeAndRegion(vars["size"], vars["region"], &options)
+	err = handleSizeAndRegion(vars["size"], vars["region"], config, &options)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -145,8 +146,6 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	images, _ := r.Context().Value(ContextKey("images")).(*groupcache.Group)
 	thumbnails, _ := r.Context().Value(ContextKey("thumbnails")).(*groupcache.Group)
 
-	vars["root"] = config.Images
-
 	sURL := r.URL.String()
 	modTime := time.Now()
 
@@ -154,12 +153,19 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	if thumbnails != nil {
 		var image = new(ImageWithModTime)
-		err = thumbnails.Get(vars, sURL, groupcache.ProtoSink(image))
+		ctx := struct {
+			vars   map[string]string
+			config *Config
+		}{
+			vars,
+			config,
+		}
+		err = thumbnails.Get(ctx, sURL, groupcache.ProtoSink(image))
 		buffer = image.GetBuffer()
 		_ = modTime.UnmarshalBinary(image.GetModTime())
 	} else {
 		var mt *time.Time
-		buffer, mt, err = resizeImage(vars, images)
+		buffer, mt, err = resizeImage(config, vars, images)
 		// When testing... mt might be null.
 		if mt != nil {
 			modTime = *mt
@@ -279,7 +285,7 @@ func downloadImage(url string) ([]byte, error) {
 	return buf, nil
 }
 
-func handleSizeAndRegion(size string, region string, opts *bimg.Options) error {
+func handleSizeAndRegion(size string, region string, config *Config, opts *bimg.Options) error {
 	// Size
 	// ----
 	// max, full
@@ -294,8 +300,11 @@ func handleSizeAndRegion(size string, region string, opts *bimg.Options) error {
 	var pct float64
 
 	best := false
+	isMax := false
 
-	if size != "max" && size != "full" {
+	if size == "max" || size == "full" {
+		isMax = config.MaxArea != 0 || config.MaxWidth != 0
+	} else {
 		if strings.HasPrefix(size, "pct:") {
 			var err error
 			pct, err = strconv.ParseFloat(size[4:], 64)
@@ -333,10 +342,15 @@ func handleSizeAndRegion(size string, region string, opts *bimg.Options) error {
 				height = int(h)
 			}
 		}
-		// XXX Handle max w.r.t. the configuration (anti-DOS)
+
+		if (config.MaxWidth != 0 && (config.MaxWidth < width || config.MaxHeight < height)) ||
+			(config.MaxArea != 0 && config.MaxArea < width*height) {
+			message := fmt.Sprintf(maxSizeError, width, height, config.MaxWidth, config.MaxHeight, config.MaxArea)
+			return HTTPError{http.StatusBadRequest, message}
+		}
 	}
 
-	debug("Input sizes: %v x %v / %v (best: %v)", width, height, pct, best)
+	debug("Input sizes: %v x %v / %v (best: %v, max: %v)", width, height, pct, best, isMax)
 
 	// Region
 	// ------

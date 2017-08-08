@@ -3,6 +3,7 @@ package iiif
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/mitchellh/mapstructure"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -94,7 +95,7 @@ func TestInfoAsJson(t *testing.T) {
 	}
 }
 
-func TestInfoImageID(t *testing.T) {
+func TestInfo(t *testing.T) {
 	ts := newServer()
 	defer ts.Close()
 
@@ -122,6 +123,51 @@ func TestInfoImageID(t *testing.T) {
 
 	if !strings.HasPrefix(m.ID, "https://example.org") {
 		t.Errorf("Image ID expected to contains correct host name, got: %v", m.ID)
+	}
+
+	var p ImageProfile
+	_ = mapstructure.Decode(m.Profile[1], &p)
+
+	if p.MaxArea != 0 {
+		t.Errorf("Profile MaxArea expected to be missing, got: %v.", p.MaxArea)
+	}
+}
+
+func TestInfoMaxSize(t *testing.T) {
+	ts := newServerWithMaxSize(400, 200, 50000)
+	defer ts.Close()
+
+	req, err := http.NewRequest("GET", ts.URL+"/images/test.png/info.json", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer resp.Body.Close()
+	decoder := json.NewDecoder(resp.Body)
+
+	var m Image
+	err = decoder.Decode(&m)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var p ImageProfile
+	_ = mapstructure.Decode(m.Profile[1], &p)
+
+	if p.MaxWidth != 400 {
+		t.Errorf("Profile MaxArea expected to be 400, got: %v.", p.MaxWidth)
+	}
+	if p.MaxHeight != 200 {
+		t.Errorf("Profile MaxArea expected to be 200, got: %v.", p.MaxHeight)
+	}
+	if p.MaxArea != 50000 {
+		t.Errorf("Profile MaxArea expected to be 50000, got: %v.", p.MaxArea)
 	}
 }
 
@@ -220,10 +266,17 @@ func TestOnlineImageUrl(t *testing.T) {
 }
 
 func newServer() *httptest.Server {
+	return newServerWithMaxSize(0, 0, 0)
+}
+
+func newServerWithMaxSize(width, height, area int) *httptest.Server {
 	r := MakeRouter()
 	r = WithConfig(r, &Config{
 		Images:    "../fixtures",
 		Templates: "../templates",
+		MaxArea:   area,
+		MaxWidth:  width,
+		MaxHeight: height,
 	})
 	return httptest.NewServer(r)
 }

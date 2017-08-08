@@ -47,4 +47,7 @@ type Config struct {
 	Port      int    `toml:"port"`
 	Templates string `toml:"templates"`
 	Images    string `toml:"images"`
+	MaxWidth  int    `toml:"maxWidth"`
+	MaxHeight int    `toml:"maxHeight"`
+	MaxArea   int    `toml:"maxArea"`
 }
