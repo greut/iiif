@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"gopkg.in/h2non/bimg.v1"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -293,6 +294,7 @@ func handleSizeAndRegion(size string, region string, config *Config, opts *bimg.
 	// !w,h (best fit within size)
 	// w, (force width)
 	// ,h (force height)
+	// pct: (scale the image of the extracted region in %)
 
 	// Sizes
 	var width int
@@ -367,6 +369,11 @@ func handleSizeAndRegion(size string, region string, config *Config, opts *bimg.
 		} else if width != 0 || height != 0 {
 			opts.Width = width
 			opts.Height = height
+		} else {
+			// The region is full and the size is max'd
+			newW, newH := computeSize(opts.Width, opts.Height, config)
+			opts.Width = newW
+			opts.Height = newH
 		}
 	} else if region == "square" || region == "smart" {
 		if width == 0 && height == 0 {
@@ -388,6 +395,7 @@ func handleSizeAndRegion(size string, region string, config *Config, opts *bimg.
 			}
 			opts.Gravity = bimg.GravityCentre
 		} else {
+			// smart...
 			r := float64(opts.Width) / float64(opts.Height)
 			if height == 0 {
 				height = int(float64(width) / r)
@@ -397,8 +405,10 @@ func handleSizeAndRegion(size string, region string, config *Config, opts *bimg.
 			opts.Gravity = bimg.GravitySmart
 		}
 
-		opts.Width = width
-		opts.Height = height
+		newW, newH := computeSize(width, height, config)
+
+		opts.Width = newW
+		opts.Height = newH
 		opts.Crop = true
 		opts.Force = false
 	} else {
@@ -503,4 +513,32 @@ func handleQuality(quality string, opts *bimg.Options) error {
 
 	message := fmt.Sprintf(qualityError, quality)
 	return HTTPError{http.StatusBadRequest, message}
+}
+
+func computeSize(width, height int, config *Config) (int, int) {
+	// The three ratios computed for each max value.
+	rW := 1.
+	rH := 1.
+	rA := 1.
+
+	if config.MaxWidth != 0 && width > config.MaxWidth {
+		rW = float64(config.MaxWidth) / float64(width)
+	}
+
+	if config.MaxHeight != 0 && height > config.MaxHeight {
+		rH = float64(config.MaxHeight) / float64(height)
+	}
+
+	area := width * height
+	if config.MaxArea != 0 && area > config.MaxArea {
+		rA = math.Sqrt(float64(config.MaxArea) / float64(area))
+	}
+
+	// Picking the smallest ratio enforces the smallest limitation
+	ratio := math.Min(math.Min(rW, rH), rA)
+
+	w := int(float64(width) * ratio)
+	h := int(float64(height) * ratio)
+
+	return w, h
 }

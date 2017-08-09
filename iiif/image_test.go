@@ -129,6 +129,51 @@ func TestOutputSizes(t *testing.T) {
 	}
 }
 
+func TestOutputMaxSizes(t *testing.T) {
+	ts := newServerWithMaxSize(200, 300, 50000)
+	defer ts.Close()
+
+	var tests = []struct {
+		url    string
+		width  int
+		height int
+	}{
+		{"/lena.jpg/full/max/0/default.png", 140, 300},
+		{"/lena.jpg/square/max/0/default.png", 200, 200},
+	}
+
+	for _, test := range tests {
+		debug("%s ~> %d x %d", test.url, test.width, test.height)
+		url := ts.URL + test.url
+		resp, err := http.Get(url)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if status := resp.StatusCode; status != http.StatusOK {
+			t.Errorf("handler returned wrong status code: got %v want %v\nmessage: %s", status, http.StatusOK, string(body))
+			return
+		}
+
+		image := bimg.NewImage(body)
+		size, err := image.Size()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if size.Width != test.width || size.Height != test.height {
+			t.Errorf("sizes do not match for %v: got %vx%v want %vx%v", test.url, size.Width, size.Height, test.width, test.height)
+			return
+		}
+	}
+}
+
 func TestFailing(t *testing.T) {
 	ts := newServerWithMaxSize(2000, 3000, 5000000)
 	defer ts.Close()
