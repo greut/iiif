@@ -6,3 +6,7 @@ templates = "templates"
 maxWidth = 0
 maxHeight = 0
 maxArea = 0
+
+[cache]
+images = "512MB"
+thumbnails = "512MB"

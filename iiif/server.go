@@ -25,12 +25,12 @@ func MakeRouter() http.Handler {
 }
 
 // SetGroupCache set the two caches for input and output pictures
-func SetGroupCache(router http.Handler, peers ...string) http.Handler {
+func SetGroupCache(router http.Handler, config *Config, peers ...string) http.Handler {
 	// Caching
 	pool := groupcache.NewHTTPPool(peers[0])
 	pool.Set(peers...)
 
-	var images = groupcache.NewGroup("images", 128<<20, groupcache.GetterFunc(
+	var images = groupcache.NewGroup("images", config.Cache.ImagesSize, groupcache.GetterFunc(
 		func(ctx groupcache.Context, key string, dest groupcache.Sink) error {
 			url := key
 			data, err := downloadImage(url)
@@ -43,7 +43,7 @@ func SetGroupCache(router http.Handler, peers ...string) http.Handler {
 		},
 	))
 
-	var thumbnails = groupcache.NewGroup("thumbnails", 512<<20, groupcache.GetterFunc(
+	var thumbnails = groupcache.NewGroup("thumbnails", config.Cache.ThumbnailsSize, groupcache.GetterFunc(
 		func(ctx groupcache.Context, key string, dest groupcache.Sink) error {
 			// FIXME ugly bits
 			c := ctx.(struct {

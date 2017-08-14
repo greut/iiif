@@ -8,12 +8,13 @@ import (
 )
 
 func TestWithGroupCache(t *testing.T) {
-	r := MakeRouter()
-	r = SetGroupCache(r, "http://localhost/")
-	r = WithConfig(r, &Config{
+	c := &Config{
 		Templates: "../templates",
 		Images:    "../fixtures",
-	})
+	}
+	r := MakeRouter()
+	r = SetGroupCache(r, c, "http://localhost/")
+	r = WithConfig(r, c)
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 

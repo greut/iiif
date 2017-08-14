@@ -43,11 +43,20 @@ type Image struct {
 
 // Config stores the IIIF server configuration.
 type Config struct {
-	Host      string `toml:"host"`
-	Port      int    `toml:"port"`
-	Templates string `toml:"templates"`
-	Images    string `toml:"images"`
-	MaxWidth  int    `toml:"maxWidth"`
-	MaxHeight int    `toml:"maxHeight"`
-	MaxArea   int    `toml:"maxArea"`
+	Host      string      `toml:"host"`
+	Port      int         `toml:"port"`
+	Templates string      `toml:"templates"`
+	Images    string      `toml:"images"`
+	MaxWidth  int         `toml:"maxWidth"`
+	MaxHeight int         `toml:"maxHeight"`
+	MaxArea   int         `toml:"maxArea"`
+	Cache     CacheConfig `toml:"cache"`
+}
+
+// CacheConfig represents the configuration information regarding the cache.
+type CacheConfig struct {
+	Images         string `toml:"images"`
+	Thumbnails     string `toml:"thumbnails"`
+	ImagesSize     int64
+	ThumbnailsSize int64
 }

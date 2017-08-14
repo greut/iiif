@@ -54,6 +54,7 @@ before_install:
 before_script:
   - >
     go get -u
+    code.cloudfoundry.org/bytefmt
     github.com/BurntSushi/toml
     github.com/golang/groupcache
     github.com/golang/lint/golint

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"code.cloudfoundry.org/bytefmt"
 	"flag"
 	"fmt"
 	"github.com/BurntSushi/toml"
@@ -25,9 +26,15 @@ func main() {
 		return
 	}
 
+	iS, _ := bytefmt.ToBytes(config.Cache.Images)
+	tS, _ := bytefmt.ToBytes(config.Cache.Thumbnails)
+	config.Cache.ImagesSize = int64(iS)
+	config.Cache.ThumbnailsSize = int64(tS)
+
 	// build router with group cache middleware and root directory.
 	handler := iiif.SetGroupCache(
 		iiif.WithConfig(iiif.MakeRouter(), &config),
+		&config,
 		fmt.Sprintf("http://%s/", config.Host), // TODO add any other servers here...
 	)
 
