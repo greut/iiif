@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/amalfra/etag"
 	"github.com/golang/groupcache"
 	"github.com/gorilla/mux"
 	"gopkg.in/h2non/bimg.v1"
@@ -132,9 +131,8 @@ func resizeImage(config *Config, vars map[string]string, cache *groupcache.Group
 	}
 
 	output := &CroppedImage{
-		image.Image(),
-		loadedImage.ModTime,
-		loadedImage.ETag,
+		Buffer:  image.Image(),
+		ModTime: loadedImage.ModTime,
 	}
 	return output, nil
 }
@@ -159,7 +157,6 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Loading from GroupCache or straight up.
 	var buffer []byte
-	var et string
 	var err error
 	if thumbnails != nil {
 		var image = new(CacheableImage)
@@ -173,13 +170,11 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		err = thumbnails.Get(ctx, sURL, groupcache.ProtoSink(image))
 		buffer = image.GetBuffer()
 		_ = modTime.UnmarshalBinary(image.GetModTime())
-		et = string(image.GetETag())
 	} else {
 		var ci *CroppedImage
 		ci, err = resizeImage(config, vars, images)
 		if ci != nil {
 			buffer = ci.Buffer
-			et = ci.ETag
 			// When testing... mt might be null.
 			if ci.ModTime != nil {
 				modTime = *ci.ModTime
@@ -207,7 +202,8 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Disposition", fmt.Sprintf("%s; filename=%s", disposition, filename))
-	w.Header().Set("ETag", et)
+	w.Header().Set("ETag", getETag(sURL))
+	w.Header().Set("Cache-Control", fmt.Sprintf("max-age=%v, public", config.Cache.HTTP))
 	http.ServeContent(w, r, filename, modTime, bytes.NewReader(buffer))
 }
 
@@ -269,9 +265,8 @@ func openImage(identifier string, root string, cache *groupcache.Group) (*Loaded
 	}
 
 	image := &LoadedImage{
-		bimg.NewImage(buffer),
-		&modTime,
-		etag.Generate(identifier, false),
+		Image:   bimg.NewImage(buffer),
+		ModTime: &modTime,
 	}
 	return image, nil
 }

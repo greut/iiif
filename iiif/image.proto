@@ -1,9 +1,8 @@
 syntax = "proto3";
 
-package main;
+package iiif;
 
 message CacheableImage {
     bytes mod_time = 1;
-    bytes e_tag = 2;
-    bytes buffer = 3;
+    bytes buffer = 2;
 }

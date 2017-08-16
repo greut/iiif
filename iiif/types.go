@@ -60,6 +60,7 @@ type Config struct {
 
 // CacheConfig represents the configuration information regarding the cache.
 type CacheConfig struct {
+	HTTP           int64  `toml:"http"`
 	Images         string `toml:"images"`
 	Thumbnails     string `toml:"thumbnails"`
 	ImagesSize     int64
@@ -70,12 +71,10 @@ type CacheConfig struct {
 type LoadedImage struct {
 	Image   *bimg.Image
 	ModTime *time.Time
-	ETag    string
 }
 
 // CroppedImage represents an image ready to be served or cached.
 type CroppedImage struct {
 	Buffer  []byte
 	ModTime *time.Time
-	ETag    string
 }

@@ -11,7 +11,6 @@ deps: rmdeps
 	ln -s ../../../../iiif src/github.com/greut/iiif
 	go get -u \
          code.cloudfoundry.org/bytefmt \
-         github.com/amalfra/etag \
          github.com/BurntSushi/toml \
          github.com/golang/protobuf/proto \
          github.com/golang/groupcache \

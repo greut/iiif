@@ -57,11 +57,10 @@ func SetGroupCache(router http.Handler, config *Config, peers ...string) http.Ha
 
 			binTime, _ := ci.ModTime.MarshalBinary()
 
-			debug("Caching %s (%s)", key, ci.ETag)
+			debug("Caching %s (%v)", key, ci.ModTime)
 
 			dest.SetProto(&CacheableImage{
 				binTime,
-				[]byte(ci.ETag),
 				ci.Buffer,
 			})
 			return nil

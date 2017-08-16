@@ -8,5 +8,6 @@ maxHeight = 0
 maxArea = 0
 
 [cache]
+http = 31557600
 images = "512MB"
 thumbnails = "512MB"

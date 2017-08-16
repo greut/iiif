@@ -2,6 +2,7 @@ package iiif
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -251,7 +252,8 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	header.Set("Access-Control-Allow-Origin", "*")
 	header.Set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
-	header.Set("ETag", loadedImage.ETag)
+	header.Set("ETag", getETag(r.URL.String()))
+	header.Set("Cache-Control", fmt.Sprintf("max-age=%v, public", config.Cache.HTTP))
 	http.ServeContent(w, r, "info.json", *loadedImage.ModTime, bytes.NewReader(buffer))
 }
 
@@ -283,4 +285,8 @@ func ViewerHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	t.Execute(w, p)
+}
+
+func getETag(str string) string {
+	return fmt.Sprintf("\"%x\"", sha1.Sum([]byte(str)))
 }
