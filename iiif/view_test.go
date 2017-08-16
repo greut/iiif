@@ -75,6 +75,22 @@ func TestRedirectToInfo(t *testing.T) {
 	}
 }
 
+func TestEtag(t *testing.T) {
+	ts := newServer()
+	defer ts.Close()
+
+	url := ts.URL + "/images/test.png/full/max/0/default.png"
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if etag := resp.Header.Get("ETag"); etag == "" {
+		t.Errorf("handle should have a ETag header, got nothing.")
+	}
+}
+
 func TestInfoAsJson(t *testing.T) {
 	ts := newServer()
 	defer ts.Close()

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"github.com/amalfra/etag"
 	"github.com/golang/groupcache"
 	"github.com/gorilla/mux"
 	"gopkg.in/h2non/bimg.v1"
@@ -29,7 +30,7 @@ var formatError = "IIIF 2.1 `format` argument is not yet recognized: %#v"
 var formatMissing = "libvips cannot output this format %#v as of yet"
 var formatReadMissing = "libvips cannot read this format %#v as of yet"
 
-func resizeImage(config *Config, vars map[string]string, cache *groupcache.Group) ([]byte, *time.Time, error) {
+func resizeImage(config *Config, vars map[string]string, cache *groupcache.Group) (*CroppedImage, error) {
 	identifier := vars["identifier"]
 	format := vars["format"]
 
@@ -54,23 +55,24 @@ func resizeImage(config *Config, vars map[string]string, cache *groupcache.Group
 
 	if !bimg.IsTypeSupportedSave(bimgType) {
 		message := fmt.Sprintf(formatMissing, format)
-		return nil, nil, HTTPError{http.StatusNotImplemented, message}
+		return nil, HTTPError{http.StatusNotImplemented, message}
 	}
 
 	// Open image
-	image, modTime, err := openImage(identifier, config.Images, cache)
+	loadedImage, err := openImage(identifier, config.Images, cache)
 	if err != nil {
 		e, ok := err.(HTTPError)
 		if ok {
-			return nil, nil, e
+			return nil, e
 		}
-		return nil, nil, HTTPError{http.StatusNotFound, identifier}
+		return nil, HTTPError{http.StatusNotFound, identifier}
 	}
 
+	image := loadedImage.Image
 	size, err := image.Size()
 	if err != nil {
 		message := fmt.Sprintf(openError, err.Error())
-		return nil, nil, HTTPError{http.StatusBadRequest, message}
+		return nil, HTTPError{http.StatusBadRequest, message}
 	}
 
 	options := bimg.Options{
@@ -84,20 +86,20 @@ func resizeImage(config *Config, vars map[string]string, cache *groupcache.Group
 	// Bimg handles the zooming before the cropping
 	err = handleSizeAndRegion(vars["size"], vars["region"], config, &options)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// Quality
 	// -------
 	err = handleQuality(vars["quality"], &options)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	_, err = image.Process(options)
 	if err != nil {
 		message := fmt.Sprintf("bimg couldn't process the image: %#v", err.Error())
-		return nil, nil, HTTPError{http.StatusInternalServerError, message}
+		return nil, HTTPError{http.StatusInternalServerError, message}
 	}
 
 	// Rotation
@@ -111,10 +113,10 @@ func resizeImage(config *Config, vars map[string]string, cache *groupcache.Group
 
 	if err != nil {
 		message := fmt.Sprintf(rotationError, rotation)
-		return nil, nil, HTTPError{http.StatusBadRequest, message}
+		return nil, HTTPError{http.StatusBadRequest, message}
 	} else if angle%90 != 0 {
 		message := fmt.Sprintf(rotationMissing, rotation)
-		return nil, nil, HTTPError{http.StatusNotImplemented, message}
+		return nil, HTTPError{http.StatusNotImplemented, message}
 	}
 
 	if flip || angle != 0 {
@@ -125,11 +127,16 @@ func resizeImage(config *Config, vars map[string]string, cache *groupcache.Group
 		_, err = image.Process(options)
 		if err != nil {
 			message := fmt.Sprintf("bimg couldn't process the image: %#v", err.Error())
-			return nil, nil, HTTPError{http.StatusInternalServerError, message}
+			return nil, HTTPError{http.StatusInternalServerError, message}
 		}
 	}
 
-	return image.Image(), modTime, nil
+	output := &CroppedImage{
+		image.Image(),
+		loadedImage.ModTime,
+		loadedImage.ETag,
+	}
+	return output, nil
 }
 
 // ImageHandler responds to the IIIF 2.1 Image API.
@@ -150,10 +157,12 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	sURL := r.URL.String()
 	modTime := time.Now()
 
+	// Loading from GroupCache or straight up.
 	var buffer []byte
+	var et string
 	var err error
 	if thumbnails != nil {
-		var image = new(ImageWithModTime)
+		var image = new(CacheableImage)
 		ctx := struct {
 			vars   map[string]string
 			config *Config
@@ -164,12 +173,17 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		err = thumbnails.Get(ctx, sURL, groupcache.ProtoSink(image))
 		buffer = image.GetBuffer()
 		_ = modTime.UnmarshalBinary(image.GetModTime())
+		et = string(image.GetETag())
 	} else {
-		var mt *time.Time
-		buffer, mt, err = resizeImage(config, vars, images)
-		// When testing... mt might be null.
-		if mt != nil {
-			modTime = *mt
+		var ci *CroppedImage
+		ci, err = resizeImage(config, vars, images)
+		if ci != nil {
+			buffer = ci.Buffer
+			et = ci.ETag
+			// When testing... mt might be null.
+			if ci.ModTime != nil {
+				modTime = *ci.ModTime
+			}
 		}
 	}
 
@@ -193,15 +207,15 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Disposition", fmt.Sprintf("%s; filename=%s", disposition, filename))
-
+	w.Header().Set("ETag", et)
 	http.ServeContent(w, r, filename, modTime, bytes.NewReader(buffer))
 }
 
-func openImage(identifier string, root string, cache *groupcache.Group) (*bimg.Image, *time.Time, error) {
+func openImage(identifier string, root string, cache *groupcache.Group) (*LoadedImage, error) {
 	identifier, err := url.QueryUnescape(identifier)
 	if err != nil {
 		debug("Filename is frob %#v", identifier)
-		return nil, nil, err
+		return nil, err
 	}
 
 	identifier = strings.Replace(identifier, "../", "", -1)
@@ -218,7 +232,7 @@ func openImage(identifier string, root string, cache *groupcache.Group) (*bimg.I
 			url, err := base64.StdEncoding.DecodeString(identifier)
 			if err != nil {
 				debug("Not a base64 encoded URL either.")
-				return nil, nil, err
+				return nil, err
 			}
 			sURL = string(url)
 		}
@@ -226,21 +240,27 @@ func openImage(identifier string, root string, cache *groupcache.Group) (*bimg.I
 		if cache != nil {
 			err = cache.Get(nil, sURL, groupcache.AllocatingByteSliceSink(&buffer))
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 			debug("From cache %v", sURL)
 		} else {
 			buffer, err = downloadImage(sURL)
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 		}
 	} else {
 		buffer, err = bimg.Read(filename)
 		if err != nil {
-			return nil, nil, HTTPError{http.StatusBadRequest, err.Error()}
+			return nil, HTTPError{http.StatusBadRequest, err.Error()}
 		}
 
+	}
+
+	imageType := bimg.DetermineImageType(buffer)
+	if !bimg.IsTypeSupported(imageType) {
+		message := fmt.Sprintf(formatReadMissing, bimg.ImageTypes[imageType])
+		return nil, HTTPError{http.StatusNotImplemented, message}
 	}
 
 	modTime := time.Now()
@@ -248,14 +268,12 @@ func openImage(identifier string, root string, cache *groupcache.Group) (*bimg.I
 		modTime = stat.ModTime()
 	}
 
-	imageType := bimg.DetermineImageType(buffer)
-	if !bimg.IsTypeSupported(imageType) {
-		message := fmt.Sprintf(formatReadMissing, bimg.ImageTypes[imageType])
-		return nil, nil, HTTPError{http.StatusNotImplemented, message}
+	image := &LoadedImage{
+		bimg.NewImage(buffer),
+		&modTime,
+		etag.Generate(identifier, false),
 	}
-
-	image := bimg.NewImage(buffer)
-	return image, &modTime, nil
+	return image, nil
 }
 
 func downloadImage(url string) ([]byte, error) {

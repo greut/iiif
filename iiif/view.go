@@ -160,7 +160,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 
 	identifier = strings.Replace(identifier, "../", "", -1)
 
-	image, modTime, err := openImage(identifier, config.Images, groupcache)
+	loadedImage, err := openImage(identifier, config.Images, groupcache)
 	if err != nil {
 		e, ok := err.(HTTPError)
 		if ok {
@@ -171,6 +171,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	image := loadedImage.Image
 	size, err := image.Size()
 	if err != nil {
 		message := fmt.Sprintf(openError, identifier)
@@ -250,7 +251,8 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	header.Set("Access-Control-Allow-Origin", "*")
 	header.Set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
-	http.ServeContent(w, r, "info.json", *modTime, bytes.NewReader(buffer))
+	header.Set("ETag", loadedImage.ETag)
+	http.ServeContent(w, r, "info.json", *loadedImage.ModTime, bytes.NewReader(buffer))
 }
 
 // ViewerHandler responds with the existing templates.

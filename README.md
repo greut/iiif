@@ -102,5 +102,6 @@ By adding `?dl` to any image, it will trigger the `Content-Disposition` with `at
 ## Protobuf
 
 ```console
-$ PATH=$PATH:`pwd`/bin protoc --go_out=. image.proto
+$ go get -u github.com/golang/protobuf/protoc-gen-go
+$ PATH=$PATH:`pwd`/bin protoc --go_out=. iiif/image.proto
 ```

@@ -55,6 +55,7 @@ before_script:
   - >
     go get -u
     code.cloudfoundry.org/bytefmt
+    github.com/amalfra/etag
     github.com/BurntSushi/toml
     github.com/golang/groupcache
     github.com/golang/lint/golint

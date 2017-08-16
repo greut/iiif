@@ -1,5 +1,10 @@
 package iiif
 
+import (
+	"gopkg.in/h2non/bimg.v1"
+	"time"
+)
+
 // ImageProfile contains the technical properties about the service.
 type ImageProfile struct {
 	Context   string   `json:"@context,omitempty"`
@@ -59,4 +64,18 @@ type CacheConfig struct {
 	Thumbnails     string `toml:"thumbnails"`
 	ImagesSize     int64
 	ThumbnailsSize int64
+}
+
+// LoadedImage represents an image just loaded over HTTP or cache.
+type LoadedImage struct {
+	Image   *bimg.Image
+	ModTime *time.Time
+	ETag    string
+}
+
+// CroppedImage represents an image ready to be served or cached.
+type CroppedImage struct {
+	Buffer  []byte
+	ModTime *time.Time
+	ETag    string
 }
