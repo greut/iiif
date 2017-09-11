@@ -31,12 +31,16 @@ func main() {
 	config.Cache.ImagesSize = int64(iS)
 	config.Cache.ThumbnailsSize = int64(tS)
 
-	// build router with group cache middleware and root directory.
-	handler := iiif.SetGroupCache(
-		iiif.WithConfig(iiif.MakeRouter(), &config),
-		&config,
-		fmt.Sprintf("http://%s/", config.Host), // TODO add any other servers here...
-	)
+	// build router with root directory.
+	handler := iiif.WithConfig(iiif.MakeRouter(), &config)
+	// add group cache middleware if the cache size is greater than zero.
+	if config.Cache.ImagesSize > 0 && config.Cache.ThumbnailsSize > 0 {
+		handler = iiif.SetGroupCache(
+			handler,
+			&config,
+			fmt.Sprintf("http://%s/", config.Host), // TODO add any other servers here...
+		)
+	}
 
 	// Serving
 	listen := fmt.Sprintf("%v:%v", config.Host, config.Port)
