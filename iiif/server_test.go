@@ -30,7 +30,6 @@ func TestWithGroupCache(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		debug("%v ~> %d", test.identifier, test.status)
 		url := ts.URL + "/" + test.identifier + "/full/max/0/default.png"
 		resp, err := http.Get(url)
 		if err != nil {

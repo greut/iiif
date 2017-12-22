@@ -1,4 +1,4 @@
-GOPATH := $(shell pwd)
+export GOPATH := $(shell pwd)
 
 .PHONY:
 all: bin/iiif
@@ -16,7 +16,6 @@ deps: rmdeps
          github.com/golang/groupcache \
          github.com/gorilla/mux \
          github.com/mitchellh/mapstructure \
-         github.com/tj/go-debug \
          gopkg.in/h2non/bimg.v1
 
 bin/iiif: iiif/*.go
@@ -25,5 +24,3 @@ bin/iiif: iiif/*.go
 .PHONY:
 test:
 	cd iiif; go test -v
-
-.PHONY:

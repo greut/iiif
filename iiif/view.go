@@ -6,8 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/golang/groupcache"
-	"github.com/gorilla/mux"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -16,6 +14,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/golang/groupcache"
+	"github.com/gorilla/mux"
 )
 
 // error messages
@@ -278,7 +279,6 @@ func ViewerHandler(w http.ResponseWriter, r *http.Request) {
 	tpl := filepath.Join(config.Templates, "viewer", viewer)
 	t, err := template.ParseFiles(tpl)
 	if err != nil {
-		debug("Template not found. %s. %#v", viewer, err.Error())
 		http.NotFound(w, r)
 		return
 	}

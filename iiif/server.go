@@ -1,14 +1,11 @@
 package iiif
 
 import (
-	"github.com/golang/groupcache"
-	"github.com/gorilla/mux"
 	"net/http"
 
-	d "github.com/tj/go-debug"
+	"github.com/golang/groupcache"
+	"github.com/gorilla/mux"
 )
-
-var debug = d.Debug("iiif")
 
 // MakeRouter construct the basic router (no middlewares)
 func MakeRouter() http.Handler {
@@ -37,7 +34,6 @@ func SetGroupCache(router http.Handler, config *Config, peers ...string) http.Ha
 			if err != nil {
 				return err
 			}
-			debug("Caching %s", key)
 			dest.SetBytes(data)
 			return nil
 		},
@@ -56,8 +52,6 @@ func SetGroupCache(router http.Handler, config *Config, peers ...string) http.Ha
 			}
 
 			binTime, _ := ci.ModTime.MarshalBinary()
-
-			debug("Caching %s (%v)", key, ci.ModTime)
 
 			dest.SetProto(&CacheableImage{
 				binTime,

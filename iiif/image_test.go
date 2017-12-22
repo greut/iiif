@@ -1,12 +1,13 @@
 package iiif
 
 import (
-	"gopkg.in/h2non/bimg.v1"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"testing"
+
+	"gopkg.in/h2non/bimg.v1"
 )
 
 func TestAcceptRanges(t *testing.T) {
@@ -98,7 +99,6 @@ func TestOutputSizes(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		debug("%s ~> %d x %d", test.url, test.width, test.height)
 		url := ts.URL + test.url
 		resp, err := http.Get(url)
 		if err != nil {
@@ -143,7 +143,6 @@ func TestOutputMaxSizes(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		debug("%s ~> %d x %d", test.url, test.width, test.height)
 		url := ts.URL + test.url
 		resp, err := http.Get(url)
 		if err != nil {
@@ -216,7 +215,6 @@ func TestFailing(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		debug("%s ~> %d", test.url, test.status)
 		url := ts.URL + test.url
 		resp, err := http.Get(url)
 		if err != nil {

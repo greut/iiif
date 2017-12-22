@@ -210,7 +210,6 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 func openImage(identifier string, root string, cache *groupcache.Group) (*LoadedImage, error) {
 	identifier, err := url.QueryUnescape(identifier)
 	if err != nil {
-		debug("Filename is frob %#v", identifier)
 		return nil, err
 	}
 
@@ -220,14 +219,12 @@ func openImage(identifier string, root string, cache *groupcache.Group) (*Loaded
 	stat, err := os.Stat(filename)
 	var buffer []byte
 	if err != nil {
-		debug("Cannot open file %#v: %#v", filename, err.Error())
 		var sURL string
 		if strings.HasPrefix(identifier, "http:/") || strings.HasPrefix(identifier, "https:/") {
 			sURL = strings.Replace(identifier, ":/", "://", 1)
 		} else {
 			url, err := base64.StdEncoding.DecodeString(identifier)
 			if err != nil {
-				debug("Not a base64 encoded URL either.")
 				return nil, err
 			}
 			sURL = string(url)
@@ -238,7 +235,6 @@ func openImage(identifier string, root string, cache *groupcache.Group) (*Loaded
 			if err != nil {
 				return nil, err
 			}
-			debug("From cache %v", sURL)
 		} else {
 			buffer, err = downloadImage(sURL)
 			if err != nil {
@@ -272,11 +268,8 @@ func openImage(identifier string, root string, cache *groupcache.Group) (*Loaded
 }
 
 func downloadImage(url string) ([]byte, error) {
-	debug("downloading %v\n", url)
-
 	resp, err := http.Get(url)
 	if err != nil {
-		debug("Download error: %q : %#v.", url, err)
 		return nil, err
 	}
 	if resp.StatusCode != 200 {
@@ -315,10 +308,10 @@ func handleSizeAndRegion(size string, region string, config *Config, opts *bimg.
 	var pct float64
 
 	best := false
-	isMax := false
+	//isMax := false
 
 	if size == "max" || size == "full" {
-		isMax = config.MaxArea != 0 || config.MaxWidth != 0
+		//isMax = config.MaxArea != 0 || config.MaxWidth != 0
 	} else {
 		if strings.HasPrefix(size, "pct:") {
 			var err error
@@ -365,8 +358,6 @@ func handleSizeAndRegion(size string, region string, config *Config, opts *bimg.
 		}
 	}
 
-	debug("Input sizes: %v x %v / %v (best: %v, max: %v)", width, height, pct, best, isMax)
-
 	// Region
 	// ------
 	// full
@@ -378,7 +369,6 @@ func handleSizeAndRegion(size string, region string, config *Config, opts *bimg.
 		if pct != 0 {
 			opts.Width = int(float64(opts.Width) / 100. * pct)
 			opts.Height = int(float64(opts.Height) / 100. * pct)
-			debug("pct %v x %v", opts.Width, opts.Height)
 		} else if width != 0 || height != 0 {
 			opts.Width = width
 			opts.Height = height
@@ -460,8 +450,6 @@ func handleSizeAndRegion(size string, region string, config *Config, opts *bimg.
 			h, errH = strconv.ParseInt(sizes[3], 10, 64)
 		}
 
-		debug("Crop area: %v; %v (%v x %v)", x, y, w, h)
-
 		if errX != nil || errY != nil || errW != nil || errH != nil ||
 			x < 0 || y < 0 || w <= 0 || h <= 0 ||
 			int(x+w) > opts.Width || int(y+h) > opts.Height {
@@ -487,8 +475,6 @@ func handleSizeAndRegion(size string, region string, config *Config, opts *bimg.
 				}
 			}
 		}
-
-		debug("Output size : %v x %v", width, height)
 
 		// Calculate the new width/height...
 		rW := float64(w) / float64(width)
