@@ -57,7 +57,7 @@ before_script:
     code.cloudfoundry.org/bytefmt
     github.com/BurntSushi/toml
     github.com/golang/groupcache
-    github.com/golang/lint/golint
+    golang.org/x/lint/golint
     github.com/golang/protobuf/proto
     github.com/gorilla/mux
     github.com/mattn/goveralls
