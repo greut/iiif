@@ -1,6 +1,7 @@
 # IIIF
 
 [![Build Status](https://travis-ci.org/greut/iiif.svg?branch=master)](https://travis-ci.org/greut/iiif) [![Go Report Card](https://goreportcard.com/badge/github.com/greut/iiif)](https://goreportcard.com/report/github.com/greut/iiif) [![Coverage Status](https://coveralls.io/repos/github/greut/iiif/badge.svg?branch=master)](https://coveralls.io/github/greut/iiif?branch=master)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fgreut%2Fiiif.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fgreut%2Fiiif?ref=badge_shield)
 
 A sample and quite dumb web server to serve pictures following the [iiif API](http://iiif.io/).
 
@@ -113,3 +114,7 @@ By adding `?dl` to any image, it will trigger the `Content-Disposition` with `at
 $ go get -u github.com/golang/protobuf/protoc-gen-go
 $ PATH=$PATH:`pwd`/bin protoc --go_out=. iiif/image.proto
 ```
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fgreut%2Fiiif.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fgreut%2Fiiif?ref=badge_large)
