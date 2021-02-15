@@ -3,13 +3,14 @@ package iiif
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/mitchellh/mapstructure"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/mitchellh/mapstructure"
 )
 
 func TestGetHtml(t *testing.T) {

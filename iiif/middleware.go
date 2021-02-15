@@ -2,8 +2,9 @@ package iiif
 
 import (
 	"context"
-	"github.com/golang/groupcache"
 	"net/http"
+
+	"github.com/golang/groupcache"
 )
 
 // ContextKey is the cache key to use.

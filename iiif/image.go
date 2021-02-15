@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/golang/groupcache"
-	"github.com/gorilla/mux"
-	"gopkg.in/h2non/bimg.v1"
 	"io/ioutil"
 	"math"
 	"net/http"
@@ -16,6 +13,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/golang/groupcache"
+	"github.com/gorilla/mux"
+	"gopkg.in/h2non/bimg.v1"
 )
 
 // error messages
