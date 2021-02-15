@@ -1,13 +1,14 @@
 package main
 
 import (
-	"code.cloudfoundry.org/bytefmt"
 	"flag"
 	"fmt"
-	"github.com/BurntSushi/toml"
-	"github.com/greut/iiif/iiif"
 	"log"
 	"net/http"
+
+	"code.cloudfoundry.org/bytefmt"
+	"github.com/BurntSushi/toml"
+	"github.com/greut/iiif/iiif"
 )
 
 func main() {

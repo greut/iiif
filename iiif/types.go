@@ -1,8 +1,9 @@
 package iiif
 
 import (
-	"gopkg.in/h2non/bimg.v1"
 	"time"
+
+	"gopkg.in/h2non/bimg.v1"
 )
 
 // ImageProfile contains the technical properties about the service.
