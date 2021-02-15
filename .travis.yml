@@ -57,7 +57,7 @@ before_script:
 script:
   - test `gofmt -s -d cmd iiif | tee -a /dev/fd/2 | wc -l` -eq 0
   - test `golint github.com/greut/iiif/iiif | tee -a /dev/fd/2 | wc -l` -eq 0
-  - go tool vet .
+  - go vet .
   - >
     go test -v -race
     -covermode=atomic
